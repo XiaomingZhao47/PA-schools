@@ -1,7 +1,5 @@
 from lxml import html
 import requests
-import os
-import subprocess
 
 def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
     pdf_urls_file = open(PDF_URLS_FILE_PATH, "r")
@@ -50,7 +48,7 @@ def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
     file_urls = []
 
     for url in pdf_urls_file:
-        url_clean = url.replace("\n", "")
+        url_clean = url.strip()
 
         log(f'    Checking {url_clean}')
 
