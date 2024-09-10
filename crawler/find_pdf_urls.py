@@ -1,5 +1,4 @@
 import os
-from utils import log
 
 # Checks if the url is valid and one we care about
 def is_valid_url(line):
@@ -28,6 +27,7 @@ def clean(url):
 
 
 def run(PDF_FILE, PDF_URLS_FILE, logger):
+    logger.indent()
     pdf_file = open(PDF_FILE, "rb")
 
     valid_urls = []
@@ -47,6 +47,7 @@ def run(PDF_FILE, PDF_URLS_FILE, logger):
     valid_urls.sort()
     for valid_url in valid_urls:
         pdf_urls_file.write(valid_url + "\n")
-        log(logger, f'    Found valid url: {valid_url}')
+        logger.write(f'Found valid url: {valid_url}')
 
     pdf_urls_file.close()
+    logger.unindent()

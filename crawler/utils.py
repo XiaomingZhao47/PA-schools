@@ -1,15 +1,24 @@
-def log(logger, message):
-    logger.write(message + "\n")
-    print(message)
+class Logger:
+    def __init__(self, log_file_path):
+        self.log_file = open(log_file_path, "a+")
+        self.indentation = 0
 
-def prompt_bool(message):
-    while(True):
-        user_input = input(message + " ").lower()
+    def indent(self):
+        self.indentation += 1
 
-        if user_input == "yes" or user_input == "y":
-            return True
-        elif user_input == "no" or user_input == "n":
-            return False
+    def unindent(self):
+        self.indentation -= 1
 
-        print("Invalid input. ", end = "")
+    def newline(self):
+        print("")
+        self.log_file.write("\n")
+
+    def write(self, message):
+        indented_message = ("  " * self.indentation) +  message
+
+        print(indented_message)
+        self.log_file.write(indented_message + "\n")
+
+    def close(self):
+        self.log_file.close()
 
