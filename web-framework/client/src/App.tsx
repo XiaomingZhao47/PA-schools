@@ -6,7 +6,7 @@ import './App.css';
 function App() {
   return (
     <div>
-      <h1>SQLite + React (TypeScript) CRUD App</h1>
+      <h1>PA schools Searcher</h1>
       <AddDataForm />
       <DisplayData />
     </div>
