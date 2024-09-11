@@ -2,6 +2,7 @@ import os
 import find_pdf_urls
 import find_data_urls
 import download_urls
+import clean_data
 from utils import Logger
 import subprocess
 from pathlib import Path
@@ -11,6 +12,7 @@ PDF_URLS_FILE = "./pdf_urls.txt"
 DATA_URLS_FILE = "./data_urls.txt"
 
 DATA_DIRECTORY = "./data"
+CLEAN_DATA_DIRECTORY = "./data-clean"
 LOGS_FILE = "./crawler_logs.txt"
 
 logger = Logger(LOGS_FILE)
@@ -68,7 +70,7 @@ if not os.path.exists(DATA_URLS_FILE):
 
 # Creates the DATA_DIRECTORY if it doesn't exist
 Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+Path(CLEAN_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
 
 if len(os.listdir(DATA_DIRECTORY)) == 0:
@@ -81,6 +83,23 @@ if len(os.listdir(DATA_DIRECTORY)) == 0:
         logger.newline()
         logger.write("Starting Data Downloader...")
         download_urls.run(DATA_URLS_FILE, DATA_DIRECTORY, logger)
+
+        logger.write("Done!")
+    else:
+        logger.write("Aborting!")
+        exit()
+
+if len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
+    logger.newline()
+    logger.write("Not all data has been cleaned")
+
+    prompt_bool("  Would you like to run the data cleaner script? (y/n)")
+
+    if prompt_bool:
+        logger.newline()
+        logger.write("Starting Data Cleaner...")
+
+        clean_data.run(DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
 
         logger.write("Done!")
     else:

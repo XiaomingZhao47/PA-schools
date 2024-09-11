@@ -1,4 +1,4 @@
 crawler/.venv/
 crawler/__pycache__/
-crawler/crawler_logs.txt
+crawler/*.txt
 crawler/data/
