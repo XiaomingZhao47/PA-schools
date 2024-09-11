@@ -5,6 +5,8 @@ const AddDataForm: React.FC = () => {
     const [school_name, setSchoolName] = useState('');
     const [location, setLocation] = useState('');
 
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {

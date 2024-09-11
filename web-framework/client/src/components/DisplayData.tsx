@@ -7,7 +7,6 @@ interface School {
     location: string;
 }
 
-
 const DisplayData: React.FC = () => {
     const [schools, setSchools] = useState<School[]>([]);
 
