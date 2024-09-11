@@ -3,4 +3,5 @@ crawler/__pycache__/
 crawler/*.txt
 crawler/data/
 .idea
+.cache
 node_modules
