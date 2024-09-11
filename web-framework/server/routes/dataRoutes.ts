@@ -10,7 +10,6 @@ router.get('/', async (req, res) => {
   res.json(schools);
 });
 
-
 // CREATE
 router.post('/', async (req, res) => {
   const { school_name, location } = req.body;
@@ -45,3 +44,4 @@ router.get('/search', async (req, res) => {
 });
 
 export default router;
+

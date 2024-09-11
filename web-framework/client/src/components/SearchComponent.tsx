@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+//
 interface School {
     id: number;
     school_name: string;
