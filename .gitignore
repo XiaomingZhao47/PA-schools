@@ -2,3 +2,5 @@ crawler/.venv/
 crawler/__pycache__/
 crawler/*.txt
 crawler/data/
+.idea/
+web-framework/node_modules
