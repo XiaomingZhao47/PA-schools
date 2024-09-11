@@ -3,36 +3,44 @@ import { openDb } from '../database';
 
 const router = Router();
 
-// get user
+// READ
 router.get('/', async (req, res) => {
   const db = await openDb();
-  const users = await db.all('SELECT * FROM users');
-  res.json(users);
+  const schools = await db.all('SELECT * FROM schools');
+  res.json(schools);
 });
 
-// add user
+// CREATE
 router.post('/', async (req, res) => {
-  const { name, age } = req.body;
+  const { school_name, location } = req.body;
   const db = await openDb();
-  const result = await db.run('INSERT INTO users (name, age) VALUES (?, ?)', [name, age]);
+  const result = await db.run('INSERT INTO schools (school_name, location) VALUES (?, ?)', [school_name, location]);
   res.json({ id: result.lastID });
 });
 
-// update user
+// UPDATE
 router.put('/:id', async (req, res) => {
-  const { name, age } = req.body;
+  const { school_name, location } = req.body;
   const { id } = req.params;
   const db = await openDb();
-  await db.run('UPDATE users SET name = ?, age = ? WHERE id = ?', [name, age, id]);
+  await db.run('UPDATE schools SET school_name = ?, location = ? WHERE id = ?', [school_name, location, id]);
   res.sendStatus(200);
 });
 
-// delete user
+// DELETE
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   const db = await openDb();
-  await db.run('DELETE FROM users WHERE id = ?', [id]);
+  await db.run('DELETE FROM schools WHERE id = ?', [id]);
   res.sendStatus(200);
+});
+
+// SEARCH
+router.get('/search', async (req, res) => {
+  const searchQuery = req.query.q as string;
+  const db = await openDb();
+  const schools = await db.all('SELECT * FROM schools WHERE school_name LIKE ?', [`%${searchQuery}%`]);
+  res.json(schools);
 });
 
 export default router;

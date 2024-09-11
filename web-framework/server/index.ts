@@ -10,12 +10,13 @@ const port = 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// routes
 app.use('/api/data', dataRoutes);
 
 openDb().then(async (db) => {
-  await db.exec('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)');
+  await db.exec('CREATE TABLE IF NOT EXISTS schools (id INTEGER PRIMARY KEY, school_name TEXT, location TEXT)');
 });
 
 app.listen(port, () => {
-  console.log(`running on http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });
