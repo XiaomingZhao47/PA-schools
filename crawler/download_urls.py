@@ -2,6 +2,7 @@ import requests
 import re
 import os
 import random
+from pathlib import Path
 
 # https://www.codementor.io/@aviaryan/downloading-files-from-urls-in-python-77q3bs0un
 def run(DATA_URLS_FILE_PATH, DATA_DIRECTORY, logger):
@@ -10,7 +11,9 @@ def run(DATA_URLS_FILE_PATH, DATA_DIRECTORY, logger):
 
     for line in data_urls_file:
 
-        url = line.strip()
+        split_line = line.strip().split("; ")
+        file_class = split_line[0]
+        url = split_line[1]
 
         logger.write(f'Checking: {url}')
         logger.indent()
@@ -26,11 +29,14 @@ def run(DATA_URLS_FILE_PATH, DATA_DIRECTORY, logger):
 
         if is_downloadable(request, logger):
             filename = get_filename(request, logger)
-            filepath = DATA_DIRECTORY + "/" + filename
+            directory = DATA_DIRECTORY + "/" + file_class + "/"
+            filepath = directory + filename
+
+            Path(directory).mkdir(parents=True, exist_ok=True)
 
             if os.path.exists(filepath):
                 logger.write("File already exists!")
-                filepath += str(random.randint(10000, 99999))
+                exit()
 
             file = open(filepath, 'wb')
             file.write(request.content)
