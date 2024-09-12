@@ -6,3 +6,4 @@ crawler/data/
 .cache
 node_modules
 .DS_Store
+web-framework/server/data.db
