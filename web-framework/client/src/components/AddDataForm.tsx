@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-// Define the props for AddDataForm
+// define the props
 interface AddDataFormProps {
-    refreshSchools: () => Promise<void>; // Function to refresh the school list
+    refreshSchools: () => Promise<void>;
 }
 
 const AddDataForm: React.FC<AddDataFormProps> = ({ refreshSchools }) => {
@@ -13,14 +13,12 @@ const AddDataForm: React.FC<AddDataFormProps> = ({ refreshSchools }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Send POST request to add new school
+
             await axios.post('http://localhost:5000/api/data', { school_name, location });
 
-            // Clear input fields after successful submission
             setSchoolName('');
             setLocation('');
 
-            // Refresh the school list in the parent component
             refreshSchools();
         } catch (error) {
             console.error('Error adding school:', error);
