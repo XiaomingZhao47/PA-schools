@@ -22,7 +22,7 @@ const DisplayData: React.FC = () => {
             <ul>
                 {schools.map((school) => (
                     <li key={school.id}>
-                        {school.school_name} - Located in {school.location}
+                        {school.id}: {school.school_name} - Located in {school.location}
                     </li>
                 ))}
             </ul>
