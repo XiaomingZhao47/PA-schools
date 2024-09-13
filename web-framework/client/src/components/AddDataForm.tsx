@@ -14,7 +14,7 @@ const AddDataForm: React.FC<AddDataFormProps> = ({ refreshSchools }) => {
         e.preventDefault();
         try {
 
-            await axios.post('http://localhost:5000/api/data', { school_name, location });
+            await axios.post('http://localhost:5001/api/data', { school_name, location });
 
             setSchoolName('');
             setLocation('');

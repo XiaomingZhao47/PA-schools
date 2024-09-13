@@ -5,9 +5,13 @@ import { openDb } from './database';
 import dataRoutes from './routes/dataRoutes';
 
 const app = express();
-const port = 5000;
+const port = 5001;
 
-app.use(cors({}));
+app.use(cors({
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(bodyParser.json());
 
 // routes

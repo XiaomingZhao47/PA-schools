@@ -15,7 +15,7 @@ interface DisplayDataProps {
 const DisplayData: React.FC<DisplayDataProps> = ({ schools, refreshSchools }) => {
     const handleDelete = async (id: number) => {
         try {
-            await axios.delete(`http://localhost:5000/api/data/${id}`);
+            await axios.delete(`http://localhost:5001/api/data/${id}`);
             refreshSchools();
         } catch (error) {
             console.error('Error deleting school:', error);

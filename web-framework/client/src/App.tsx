@@ -19,7 +19,7 @@ const App: React.FC = () => {
   // get schools from the database
   const fetchSchools = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/data');
+      const response = await axios.get('http://localhost:5001/api/data');
       setSchools(response.data);
     } catch (error) {
       console.error('error fetching school data:', error);
