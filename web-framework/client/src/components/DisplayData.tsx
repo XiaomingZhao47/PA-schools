@@ -7,14 +7,20 @@ interface School {
     location: string;
 }
 
-const DisplayData: React.FC = () => {
-    const [schools, setSchools] = useState<School[]>([]);
+interface DisplayDataProps {
+    schools: School[];
+    refreshSchools: () => void; // Function to refresh the school list
+}
 
-    useEffect(() => {
-        axios.get('http://localhost:5000/api/data')
-            .then(response => setSchools(response.data))
-            .catch(error => console.error('Error fetching data:', error));
-    }, []);
+const DisplayData: React.FC<DisplayDataProps> = ({ schools, refreshSchools }) => {
+    const handleDelete = async (id: number) => {
+        try {
+            await axios.delete(`http://localhost:5000/api/data/${id}`); // send delete request
+            refreshSchools();
+        } catch (error) {
+            console.error('Error deleting school:', error);
+        }
+    };
 
     return (
         <div>
@@ -23,6 +29,7 @@ const DisplayData: React.FC = () => {
                 {schools.map((school) => (
                     <li key={school.id}>
                         {school.school_name} - Located in {school.location}
+                        <button onClick={() => handleDelete(school.id)}>Delete</button> {}
                     </li>
                 ))}
             </ul>
