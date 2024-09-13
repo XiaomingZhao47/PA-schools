@@ -9,13 +9,13 @@ interface School {
 
 interface DisplayDataProps {
     schools: School[];
-    refreshSchools: () => void; // Function to refresh the school list
+    refreshSchools: () => void;
 }
 
 const DisplayData: React.FC<DisplayDataProps> = ({ schools, refreshSchools }) => {
     const handleDelete = async (id: number) => {
         try {
-            await axios.delete(`http://localhost:5000/api/data/${id}`); // send delete request
+            await axios.delete(`http://localhost:5000/api/data/${id}`);
             refreshSchools();
         } catch (error) {
             console.error('Error deleting school:', error);
