@@ -37,7 +37,7 @@ const App: React.FC = () => {
       <SearchComponent />
       <DisplayData schools={schools} refreshSchools={fetchSchools} />  { }
       <DeleteData refreshSchools={fetchSchools}/>
-      <UpdateDataForm/>
+      <UpdateDataForm refreshSchools={fetchSchools}/>
     </div>
   );
 };
