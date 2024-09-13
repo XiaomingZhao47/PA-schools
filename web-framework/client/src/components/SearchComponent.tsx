@@ -14,7 +14,7 @@ const SearchComponent: React.FC = () => {
 
     const handleSearch = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/data/search?q=${searchQuery}`);
+            const response = await axios.get(`http://localhost:5001/api/data/search?q=${searchQuery}`);
             setResults(response.data);
         } catch (error) {
             console.error('err:', error);
