@@ -31,7 +31,13 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   const db = await openDb();
-  await db.run('DELETE FROM schools');
+
+  console.log(`${id}: id`)
+  if (id === "*") {
+    console.log("Running all")
+    await db.run('DELETE FROM schools');
+  }
+  await db.run('DELETE FROM schools WHERE id = ?', [id]);
   res.sendStatus(200);
 });
 
