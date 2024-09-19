@@ -7,6 +7,7 @@ crawler/data/
 node_modules
 .DS_Store
 web-framework/server/data.db
+web-framework/server/database.db
 web-framework/node_modules
 web-framework/client/node_modules
 web-framework/server/node_modules
