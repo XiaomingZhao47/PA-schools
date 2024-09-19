@@ -13,6 +13,8 @@ const App: React.FC = () => {
     const [view, setView] = useState<'list' | 'charts'>('list');
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [sortField, setSortField] = useState<string>('DistrictName');
+    const [schoolCount, setSchoolCount] = useState<number>(10);
+
 
     // get schools from the database
     const fetchSchools = async () => {
@@ -45,6 +47,7 @@ const App: React.FC = () => {
 
     // filter and sort schools
     const filterAndSortSchools = (search: string, sortBy: string) => {
+
         let filtered = schools.filter((school) =>
             school.DistrictName.toLowerCase().includes(search.toLowerCase()) ||
             school.Name.toLowerCase().includes(search.toLowerCase())
