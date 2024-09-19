@@ -12,7 +12,7 @@ PDF_URLS_FILE = "./pdf_urls.txt"
 DATA_URLS_FILE = "./data_urls.txt"
 
 DATA_DIRECTORY = "./data"
-CLEAN_DATA_DIRECTORY = "./data-clean"
+CLEAN_DATA_DIRECTORY = "../web-framework/server/data-clean"
 LOGS_FILE = "./crawler_logs.txt"
 
 logger = Logger(LOGS_FILE)
