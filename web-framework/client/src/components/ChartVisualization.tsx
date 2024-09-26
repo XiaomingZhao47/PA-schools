@@ -1,45 +1,81 @@
 import React from 'react';
-import { Bar, Pie, Line } from 'react-chartjs-2';
-import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement } from 'chart.js';
-import { ChartData } from 'chart.js';
-import { School } from '../types';
+import { Bar, Pie } from 'react-chartjs-2';
+import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
-Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement);
+// reg chart components
+Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-const ChartVisualization: React.FC<{ schools: School[] }> = ({ schools }) => {
+interface ChartVisualizationProps {
+    demographicData: any[]; // data passed from App.tsx
+}
 
-    // get data for visualization
-    const districtNames = Array.from(new Set(schools.map(school => school.DistrictName)));
-    const displayValues = districtNames.map(district => {
-        return schools
-            .filter(school => school.DistrictName === district)
-            .reduce((sum, school) => sum + parseFloat(school.DisplayValue.toString()), 0); // Sum of DisplayValue per district
-    });
+const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData }) => {
+    if (demographicData.length === 0) {
+        return <div>Loading data...</div>;
+    }
 
-    // bar chart
+    // get school data for visualization
+    const schoolNames = demographicData.map((d: any) => d.School_Name);
+    const americanIndian = demographicData.map((d: any) => d.American_Indian_Alaskan_Native || 0);
+    const asian = demographicData.map((d: any) => d.Asian || 0);
+    const black = demographicData.map((d: any) => d.Black_African_American || 0);
+    const hispanic = demographicData.map((d: any) => d.Hispanic || 0);
+    const white = demographicData.map((d: any) => d.White || 0);
+    const twoOrMoreRaces = demographicData.map((d: any) => d.Two_or_More_Races || 0);
+
     const barData = {
-        labels: districtNames,
+        labels: schoolNames,
         datasets: [
             {
-                label: 'Sum of Display Values per District',
-                data: displayValues,
+                label: 'American Indian/Alaskan Native',
+                data: americanIndian,
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            },
+            {
+                label: 'Asian',
+                data: asian,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            },
+            {
+                label: 'Black/African American',
+                data: black,
                 backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            },
+            {
+                label: 'Hispanic',
+                data: hispanic,
+                backgroundColor: 'rgba(255, 206, 86, 0.6)',
+            },
+            {
+                label: 'White',
+                data: white,
+                backgroundColor: 'rgba(153, 102, 255, 0.6)',
+            },
+            {
+                label: 'Two or More Races',
+                data: twoOrMoreRaces,
+                backgroundColor: 'rgba(255, 159, 64, 0.6)',
             },
         ],
     };
 
-    // pie chart
     const pieData = {
-        labels: districtNames,
+        labels: ['American Indian', 'Asian', 'Black', 'Hispanic', 'White', 'Two or More Races'],
         datasets: [
             {
-                label: 'Display Value Distribution',
-                data: displayValues,
+                data: [
+                    americanIndian.reduce((a: number, b: number) => a + b, 0),
+                    asian.reduce((a: number, b: number) => a + b, 0),
+                    black.reduce((a: number, b: number) => a + b, 0),
+                    hispanic.reduce((a: number, b: number) => a + b, 0),
+                    white.reduce((a: number, b: number) => a + b, 0),
+                    twoOrMoreRaces.reduce((a: number, b: number) => a + b, 0),
+                ],
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.6)',
                     'rgba(54, 162, 235, 0.6)',
-                    'rgba(255, 206, 86, 0.6)',
                     'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
                     'rgba(153, 102, 255, 0.6)',
                     'rgba(255, 159, 64, 0.6)',
                 ],
@@ -47,36 +83,15 @@ const ChartVisualization: React.FC<{ schools: School[] }> = ({ schools }) => {
         ],
     };
 
-    // line chart
-    const lineData: {
-        datasets: { backgroundColor: string; borderColor: string; data: number[]; label: string; fill: boolean }[];
-        labels: string[]
-    } = {
-        labels: districtNames,
-        datasets: [
-            {
-                label: 'Sum of Display Values per District (Line)',
-                data: displayValues,
-                fill: false,
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-            },
-        ],
-    };
-
     return (
         <div className="charts-container">
             <div className="chart">
-                <h3>Bar Chart: Sum of Display Values per District</h3>
+                <h3>Bar Chart: Demographics per School</h3>
                 <Bar data={barData} />
             </div>
             <div className="chart">
-                <h3>Pie Chart: Display Value Distribution</h3>
+                <h3>Pie Chart: Overall Demographics Distribution</h3>
                 <Pie data={pieData} />
-            </div>
-            <div className="chart">
-                <h3>Line Chart: Sum of Display Values per District</h3>
-                <Line data={lineData} /> {/* Use the corrected lineData */}
             </div>
         </div>
     );
