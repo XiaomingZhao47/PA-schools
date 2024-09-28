@@ -1,103 +1,77 @@
-import os
-from pathlib import Path
+import openpyxl
+from utils import Logger
 import shutil
-from utils import detect_year
+import os
+from xls2xlsx import XLS2XLSX
 
-
-def run(DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+def do_conversions(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+    logger.write("Converting files...")
     logger.indent()
 
-    for subdirectory in os.listdir(DATA_DIRECTORY):
-        for filename in os.listdir(DATA_DIRECTORY + "/" + subdirectory):
+    for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
+        for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
+            file = ORGANIZED_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
+            logger.write(f'Processing {file}')
+            logger.indent()
 
-            new_dir = get_new_directory(filename, subdirectory, logger)
-            new_name = get_new_name(filename, new_dir, logger)
+            if ".xls" not in file:
+                logger.write("Invalid file")
+                logger.unindent()
+                continue
 
-            copy(DATA_DIRECTORY + "/" + subdirectory, filename, CLEAN_DATA_DIRECTORY + "/" + new_dir, new_name, logger)
+            if ".xlsx" not in file:
+                logger.write(f'xls detected!')
+
+                xlsx_file = ".".join(xls_file.split(".")[0:-1]) + ".xlsx"
+                XLS2XLSX(xls_file).to_xlsx(xlsx_file)
+
+                os.remove(xls_file)
+
+            logger.unindent()
+
+    logger.unindent()
+    logger.write("Done!")
+
+def remove_extra_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+    logger.write("Converting files...")
+    logger.indent()
+
+    for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
+        for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
+            file = ORGANIZED_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
+            logger.write(f'Processing {file}')
+            logger.indent()
+
+            if ".xlsx" not in file:
+                os.remove(file)
+                logger.write("Removing file")
+
+            logger.unindent()
 
 
 
     logger.unindent()
+    logger.write("Done!")
 
-def get_new_directory(filename, directory, logger):
-    if not directory == "FRPA":
-        return directory
+def move_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+    logger.write("Moving files")
+    logger.indent()
 
-    if "District Fiscal" in filename:
-        return "Fiscal District"
+    shutil.rmtree(CLEAN_DATA_DIRECTORY)
+    shutil.copytree(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY)
 
-    if "School Fiscal" in filename:
-        return "Fiscal School"
-
-    if "DistrictFast" in filename:
-        return "Fast Facts District"
-
-    if "SchoolFast" in filename:
-        return "Fast Facts School"
-
-    if "Datafile" in filename:
-        return "FRP Data"
-
-    logger.warn("INVALID DIRECTORY")
-    return "INVALID"
-
-def get_new_name(filename, directory, logger):
-    if filename[0] == "\"" and filename[-1] == "\"":
-        filename = filename[1:-1]
-
-    year = -1
-    if filename == "DistrictFastFacts.xlsx" or filename == "SchoolFastFacts.xlsx":
-        year = 2017
-    else:
-        year = detect_year(filename)
-
-    year_str = str(year) + "-" + str(year+1)
-    type_str = "." + filename.split(".")[-1]
-
-    new_name = ""
-
-    if directory == "Cohorts":
-        cohort_year = -1
-        if "4-Year" in filename:
-            cohort_year = 4
-        elif "5-Year" in filename:
-            cohort_year = 5
-        elif "6-Year" in filename:
-            cohort_year = 6
-        else:
-            logger.warn("Invalid Year!")
-
-        return "Cohort " + str(cohort_year) + "-Year Grad Rates " + year_str + type_str
-
-    if directory == "Keystones":
-        level = ""
-        if "State" in filename:
-            level = "State"
-        elif "School" in filename:
-            level = "School"
-
-        return "Keystone Exams " + level + " Level " + year_str + type_str
-
-    if directory == "PSSAs":
-        level = ""
-        if "State" in filename:
-            level = "State"
-        elif "School" in filename:
-            level = "School"
-
-        return "PSSA " + level + " Level " + year_str + type_str
+    logger.unindent()
+    logger.write("Done")
 
 
-    return directory + " " + year_str + type_str
 
 
-def copy(old_dir, old_name, new_dir, new_name, logger):
-    Path(new_dir).mkdir(parents=True, exist_ok=True)
+def run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+    logger.indent()
 
-    old_path = old_dir + "/" + old_name
-    new_path = new_dir + "/" + new_name
+    do_conversions(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
+    remove_extra_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
+    move_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
 
-    logger.write(f'Moving {old_path} to {new_path}')
 
-    shutil.copy2(old_path, new_path)
-
+    logger.unindent()

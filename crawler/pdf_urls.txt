@@ -10,3 +10,7 @@ https://www.education.pa.gov/DataAndReporting/Graduates/Pages/default.aspx
 https://www.education.pa.gov/DataAndReporting/LoanCanLowIncome/Pages/PrivateSchools.aspx
 https://www.education.pa.gov/DataAndReporting/LoanCanLowIncome/Pages/PublicSchools.aspx
 https://www.education.pa.gov/DataAndReporting/ProfSupPers/Pages/ProfStaffSummary.aspx
+https://www.education.pa.gov/Teachers%20-%20Administrators/School%20Finances/Finances/AFR%20Data%20Summary/Pages/AFR-Data-Summary-Level.aspx
+https://www.education.pa.gov/Teachers%20-%20Administrators/School%20Finances/Finances/FinancialDataElements/Pages/default.aspx
+https://www.education.pa.gov/Teachers%20-%20Administrators/School%20Finances/Finances/GFBData/Pages/default.aspx
+https://www.education.pa.gov/Teachers%20-%20Administrators/School%20Finances/Finances/Historical%20Files/Pages/default.aspx

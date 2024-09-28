@@ -66,8 +66,8 @@ def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
                 if "through" in file_url:
                     return reject(file_url)
                 if "private" in file_url:
-                    return accept(file_url, "Low Income Private")
-                return accept(file_url, "Low Income Public")
+                    return accept(file_url, "Low_Income_Private")
+                return accept(file_url, "Low_Income_Public")
 
             if "keystone" in file_url:
                 if "technical" in file_url:
@@ -94,11 +94,46 @@ def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
                 if "through" in file_url:
                     return reject(file_url)
                 if "private" in file_url:
-                    return accept(file_url, "Enrollment Private")
-                return accept(file_url, "Enrollment Public")
+                    return accept(file_url, "Enrollment_Private")
+                return accept(file_url, "Enrollment_Public")
 
             if "personnel" in file_url:
                 return accept(file_url, "Personnel")
+
+            if "afr" in file_url:
+                if "expenditure" in file_url:
+                    return accept(file_url, "AFR_Expenditure")
+                if "revenue" in file_url:
+                    return accept(file_url, "AFR_Revenue")
+                return reject(file_url)
+
+            if "financial data elements" in file_url:
+                if "aidratio" in file_url:
+                    if "calc" in file_url:
+                        return reject(file_url)
+                    return accept(file_url, "Aid_Ratios")
+                if "membership" in file_url:
+                    return accept(file_url, "Daily_Membership")
+                if "income" in file_url:
+                    return accept(file_url, "Personal_Income")
+                if "tax" in file_url:
+                    return accept(file_url, "Tax_Rates")
+                return reject(file_url)
+
+            if "gfb" in file_url:
+                if ".xlsx" in file_url:
+                    return accept(file_url, "GFB")
+                return reject(file_url)
+
+            if "historical" in file_url:
+                if "basic" in file_url:
+                    return accept(file_url, "Funding_Basic")
+                if "special" in file_url:
+                    return accept(file_url, "Funding_Special")
+                if "secondary" in file_url:
+                    return accept(file_url, "Secondary_CTE_Subsidy")
+                return reject(file_url)
+
 
             return reject(file_url)
 

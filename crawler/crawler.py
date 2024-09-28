@@ -2,6 +2,7 @@ import os
 import find_pdf_urls
 import find_data_urls
 import download_urls
+import reorganize_data
 import clean_data
 from utils import Logger
 import subprocess
@@ -12,6 +13,7 @@ PDF_URLS_FILE = "./pdf_urls.txt"
 DATA_URLS_FILE = "./data_urls.txt"
 
 DATA_DIRECTORY = "./data"
+ORGANIZED_DATA_DIRECTORY = "./data-organized"
 CLEAN_DATA_DIRECTORY = "../web-framework/server/data-clean"
 LOGS_FILE = "./crawler_logs.txt"
 
@@ -70,8 +72,8 @@ if not os.path.exists(DATA_URLS_FILE):
 
 # Creates the DATA_DIRECTORY if it doesn't exist
 Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+Path(ORGANIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
 Path(CLEAN_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-
 
 if len(os.listdir(DATA_DIRECTORY)) == 0:
     logger.newline()
@@ -89,7 +91,7 @@ if len(os.listdir(DATA_DIRECTORY)) == 0:
         logger.write("Aborting!")
         exit()
 
-if len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
+if len(os.listdir(ORGANIZED_DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
     logger.newline()
     logger.write("Not all data has been cleaned")
 
@@ -99,7 +101,7 @@ if len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
         logger.newline()
         logger.write("Starting Data Cleaner...")
 
-        clean_data.run(DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
+        clean_data.run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
 
         logger.write("Done!")
     else:
@@ -109,24 +111,3 @@ if len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
 logger.unindent()
 logger.write("Done!")
 logger.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
