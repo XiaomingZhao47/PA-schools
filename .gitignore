@@ -12,3 +12,4 @@ web-framework/node_modules
 web-framework/client/node_modules
 web-framework/server/node_modules
 web-framework/server/data.db
+web-framework/server/schools_facts.db

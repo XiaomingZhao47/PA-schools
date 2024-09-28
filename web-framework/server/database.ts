@@ -43,8 +43,6 @@ async function loadDataFromExcel(db) {
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = xlsx.utils.sheet_to_json(worksheet);
 
-    console.log('Excel data loaded:', jsonData.length, 'rows');
-
     for (const row of jsonData) {
       const districtName = row['DistrictName'] || '';
       const name = row['Name'] || '';
