@@ -41,6 +41,16 @@ def detect_year(file):
 
     return "COULD NOT DETERMINE YEAR!!"
 
+def detect_iuid(iu_name):
+    digits = re.findall(r'\d+', iu_name)
+
+    if len(digits) != 1:
+        printf("Unusual amount of digits!")
+        return "Unusual amount of digits!"
+
+    return int(digits[0])
+
+
 
 
 
