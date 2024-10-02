@@ -6,11 +6,9 @@ from xls2xlsx import XLS2XLSX
 import re
 
 class SheetDict:
-    def __init__(self, dict, identifier, name="Sheet"):
+    def __init__(self, dict, identifier):
         self.dict = dict
         self.identifier = identifier
-        self.name = name
-        self.year = -1
 
 def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
     logger.write("Converting files...")
@@ -59,22 +57,38 @@ def detect_type(value):
 
     return new_value
 
-def rename_afr_attribute(attribute_name):
-    if attribute_name == None:
-        return None
-    if "Actual Instruction Expense" in attribute_name:
+def rename_attribute(attribute):
+    if attribute == None:
         return None
 
-    search = re.search(r'\d{4}$', attribute_name)
+    new_name = attribute.lower()
+    new_name = "_".join(new_name.split())
+    new_name = new_name.replace(",", "")
+    new_name = new_name.replace("&", "and")
+    new_name = new_name.replace("district_name", "lea_name")
+
+    if new_name == "school_district":
+        return "lea_name"
+
+    return new_name
+
+
+def rename_afr_exp_attribute(attribute):
+    new_name = rename_attribute(attribute)
+    if new_name is None:
+        return None
+    if "actual_instruction_expense" in new_name:
+        return None
+
+    search = re.search(r'\d{4}$', new_name)
 
     if search is None:
-        new_name = attribute_name.lower()
-        new_name = "_".join(new_name.split())
-        new_name = new_name.replace(",", "")
 
         if new_name == "aun":
             return None
         if "cuurent" in new_name:
+            return None
+        if "current" in new_name:
             return None
         if new_name == "ctgy":
             return None
@@ -82,9 +96,8 @@ def rename_afr_attribute(attribute_name):
             return None
         if "actual_instruction" in new_name:
             return None
-        if "school_district" in new_name:
+        if new_name == "school_district":
             return "lea_name"
-
 
         return new_name
 
@@ -136,12 +149,30 @@ def rename_afr_attribute(attribute_name):
             return "oefu"
         case _:
             print("Invalid ID!")
+            print(id)
+            print(new_name)
             exit()
 
-def rename_fast_fact_attribute(attribute_name):
-    new_name = attribute_name.lower()
-    new_name = "_".join(new_name.split())
-    new_name = new_name.replace(",", "")
+def rename_afr_exp_adm_attr(attribute):
+    new_name = rename_attribute(attribute)
+    if new_name is None:
+        return None
+    if new_name == "aun":
+        return None
+    if new_name == "ctgy":
+            return None
+    if new_name == "cat":
+        return None
+
+    if bool(re.match(r'^\d{4}\-\d{2}\_', new_name)):
+        new_name = new_name[8:]
+
+    new_name = new_name.replace("memebership", "membership")
+
+    return new_name
+
+def rename_fast_fact_attribute(attribute):
+    new_name = rename_attribute(attribute)
 
     new_name = new_name.replace("_-_percent_enrollment_by_student_groups", "")
     new_name = new_name.replace("_-_percent_enrollment_by_race/ethnicity", "")
@@ -187,18 +218,18 @@ def parse_district_fast_facts(wb):
 
         district_name = row[0].value
         aun = row[1].value
-        element = rename_fast_fact_attribute(row[2].value)
+        attribute = rename_fast_fact_attribute(row[2].value)
         value = detect_type(row[3].value)
 
-        if "offered" in element:
+        if "offered" in attribute:
             continue
 
         if aun not in districts:
-            districts[aun] = {"district_name": district_name}
+            districts[aun] = {"lea_name": district_name}
 
-        districts[aun][element] = value
+        districts[aun][attribute] = value
 
-    return SheetDict(districts, "aun", "Fast Facts")
+    return SheetDict(districts, "aun")
 
 def parse_school_fast_facts(wb):
 
@@ -226,9 +257,9 @@ def parse_school_fast_facts(wb):
 
         schools[school_id][attribute] = detect_type(value)
 
-    return SheetDict(schools, "school_id", "Fast Facts")
+    return SheetDict(schools, "school_id")
 
-def parse_afr_expenditure(wb):
+def parse_afr_expenditure(wb, year):
     expenditures = {}
     sheet = wb.active
 
@@ -250,46 +281,79 @@ def parse_afr_expenditure(wb):
             attribute = sheet.cell(row=1, column=colIdx+1).value
             value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
 
-            attribute = rename_afr_attribute(attribute)
+            attribute = rename_afr_exp_attribute(attribute)
             if attribute is None:
                 continue
 
             expenditures[aun][attribute] = detect_type(value)
 
-    return SheetDict(expenditures, "aun", "Expenditures")
-    #return [SheetDict(expenditures, "aun", "Expenditures"), SheetDict(expenditures_per_adm, "aun", "Expenditures Per ADM") ]
+    expenditures_sheet =  SheetDict(expenditures, "aun")
 
-def write_dicts(sheet_dicts, file):
+    expenditures_per_adm = {}
+    sheet = wb.worksheets[1]
 
-    wb = openpyxl.Workbook()
-    wb.remove(wb.active)
+    first = True
+    for rowIdx, row in enumerate(sheet.rows):
+        if first:
+            first = False
+            continue
 
-    next_key_index = 2
-    key_indices = {}
+        if year == 2018 or year == 2022:
+            aun = row[1].value
+        else:
+            aun = row[0].value
 
-    for year, sheet_dict in dict(sorted(sheet_dicts.items())).items():
-        sheet_name = sheet_dict.name + " " + str(year)
-        sheet = wb.create_sheet(title=sheet_name)
+        if aun is None:
+            continue
 
-        rowIdx = 2
+        expenditures_per_adm[aun] = {}
 
-        sheet.cell(row=1, column=1).value = sheet_dict.identifier
+        for colIdx, col in enumerate(row):
 
-        for key, record in sheet_dict.dict.items():
-            sheet.cell(row=rowIdx, column=1).value = key
+            attribute = sheet.cell(row=1, column=colIdx+1).value
+            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
 
-            for record_key, attribute in record.items():
-                if record_key not in key_indices:
-                    key_indices[record_key] = next_key_index
-                    next_key_index = next_key_index + 1
+            attribute = rename_afr_exp_adm_attr(attribute)
+            if attribute is None:
+                continue
+
+            expenditures_per_adm[aun][attribute] = detect_type(value)
+    expenditures_per_adm_sheet =  SheetDict(expenditures_per_adm, "aun")
+
+    return [expenditures_sheet, expenditures_per_adm_sheet]
+def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
+    for classification, sheet_dicts in classified_sheet_dicts.items():
+
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+
+        next_key_index = 2
+        key_indices = {}
+
+        for year, sheet_dict in dict(sorted(sheet_dicts.items())).items():
+
+            sheet_name = str(year)
+            sheet = wb.create_sheet(title=sheet_name)
+
+            rowIdx = 2
+
+            sheet.cell(row=1, column=1).value = sheet_dict.identifier
+
+            for key, record in sheet_dict.dict.items():
+                sheet.cell(row=rowIdx, column=1).value = key
+
+                for record_key, attribute in record.items():
+                    if record_key not in key_indices:
+                        key_indices[record_key] = next_key_index
+                        next_key_index = next_key_index + 1
 
 
-                sheet.cell(row=1, column = key_indices[record_key]).value = record_key
+                    sheet.cell(row=1, column = key_indices[record_key]).value = record_key
 
-                sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
-            rowIdx = rowIdx + 1
+                    sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
+                rowIdx = rowIdx + 1
 
-    wb.save(file[:-15] + ".xlsx")
+        wb.save(CLEAN_DATA_DIRECTORY + "/" + classification + ".xlsx")
 
 def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     logger.write("Cleaning Data...")
@@ -298,7 +362,7 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
-        if "AFR_Expenditure" not in subdirectory and "Fast" not in subdirectory:
+        if "Fast_Facts" not in subdirectory and "AFR_Expenditure" not in subdirectory:
             continue
 
         for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
@@ -313,16 +377,28 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
             wb = openpyxl.open(file)
 
             if "Fast_Facts_District" in file:
-                sheet_dicts[year] = parse_district_fast_facts(wb)
+                if "Fast_Facts_District" not in sheet_dicts:
+                    sheet_dicts["Fast_Facts_District"] = {}
+                sheet_dicts["Fast_Facts_District"][year] = parse_district_fast_facts(wb)
+
             elif "Fast_Facts_School" in file:
-                sheet_dicts[year] = parse_school_fast_facts(wb)
+                if "Fast_Facts_School" not in sheet_dicts:
+                    sheet_dicts["Fast_Facts_School"] = {}
+                sheet_dicts["Fast_Facts_School"][year] = parse_school_fast_facts(wb)
+
             elif "AFR_Expenditure" in file:
-                sheet_dicts[year] = parse_afr_expenditure(wb)
+                if "AFR_Expenditure" not in sheet_dicts:
+                    sheet_dicts["AFR_Expenditure"] = {}
+                    sheet_dicts["AFR_Expenditure_Per_ADM"] = {}
+
+                afr_expenditures = parse_afr_expenditure(wb, year)
+                sheet_dicts["AFR_Expenditure"][year] = afr_expenditures[0]
+                sheet_dicts["AFR_Expenditure_Per_ADM"][year] = afr_expenditures[1]
             else:
                 logger.write(f'No parser for: {file}')
                 continue
 
-        write_dicts(sheet_dicts, new_file)
+        write_dicts(sheet_dicts, CLEAN_DATA_DIRECTORY)
 
     logger.unindent()
     logger.write("Done!")
@@ -346,16 +422,6 @@ def remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger):
 
     logger.unindent()
     logger.write("Done!")
-
-'''def move_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
-    logger.write("Moving files")
-    logger.indent()
-
-    shutil.rmtree(CLEAN_DATA_DIRECTORY)
-    shutil.copytree(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY)
-
-    logger.unindent()
-    logger.write("Done")'''
 
 def run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     logger.indent()
