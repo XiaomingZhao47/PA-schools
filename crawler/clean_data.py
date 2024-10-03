@@ -72,105 +72,6 @@ def rename_attribute(attribute):
 
     return new_name
 
-
-def rename_afr_exp_attribute(attribute):
-    new_name = rename_attribute(attribute)
-    if new_name is None:
-        return None
-    if "actual_instruction_expense" in new_name:
-        return None
-
-    search = re.search(r'\d{4}$', new_name)
-
-    if search is None:
-
-        if new_name == "aun":
-            return None
-        if "cuurent" in new_name:
-            return None
-        if "current" in new_name:
-            return None
-        if new_name == "ctgy":
-            return None
-        if new_name == "cat":
-            return None
-        if "actual_instruction" in new_name:
-            return None
-        if new_name == "school_district":
-            return "lea_name"
-
-        return new_name
-
-    id = int(search.group(0))
-    match id:
-        case 1000:
-            return "instruction"
-        case 1100:
-            return "regular_programs"
-        case 1200:
-            return "gifted_programs"
-        case 1300:
-            return "vocational_programs"
-        case 1400:
-            return "other_instructional"
-        case 1500:
-            return "nonpublic_programs"
-        case 1600:
-            return "adult_programs"
-        case 1700:
-            return "secondary_programs"
-        case 1800:
-            return "pre-k"
-        case 2000:
-            return "support_services"
-        case 2100:
-            return "personell"
-        case 2200:
-            return "staff"
-        case 2300:
-            return "administration"
-        case 2400:
-            return "health"
-        case 2500:
-            return "business"
-        case 2600:
-            return "plant_ops"
-        case 2700:
-            return "transportation"
-        case 2800:
-            return "central"
-        case 2900:
-            return "other_support"
-        case 3000:
-            return "non-instructional_services"
-        case 4000:
-            return "facai"
-        case 5000:
-            return "oefu"
-        case _:
-            print("Invalid ID!")
-            print(id)
-            print(new_name)
-            exit()
-
-def rename_afr_exp_adm_attr(attribute):
-    new_name = rename_attribute(attribute)
-    if new_name is None:
-        return None
-    if new_name == "aun":
-        return None
-    if new_name == "ctgy":
-            return None
-    if new_name == "cat":
-        return None
-
-    if bool(re.match(r'^\d{4}\-\d{2}\_', new_name)):
-        new_name = new_name[8:]
-
-    new_name = new_name.replace("memebership", "membership")
-
-    return new_name
-
 def rename_fast_fact_attribute(attribute):
     new_name = rename_attribute(attribute)
 
@@ -206,6 +107,7 @@ def rename_fast_fact_attribute(attribute):
 
     return new_name
 
+
 def parse_district_fast_facts(wb):
     districts = {}
     sheet = wb.active
@@ -217,7 +119,7 @@ def parse_district_fast_facts(wb):
             continue
 
         district_name = row[0].value
-        aun = row[1].value
+        aun = detect_type(row[1].value)
         attribute = rename_fast_fact_attribute(row[2].value)
         value = detect_type(row[3].value)
 
@@ -244,8 +146,8 @@ def parse_school_fast_facts(wb):
 
         district_name = row[0].value
         school_name = row[1].value
-        aun = row[2].value
-        school_id = row[3].value
+        aun = detect_type(row[2].value)
+        school_id = detect_type(row[3].value)
         attribute = rename_fast_fact_attribute(row[4].value)
         value = row[5].value
 
@@ -259,68 +161,151 @@ def parse_school_fast_facts(wb):
 
     return SheetDict(schools, "school_id")
 
+def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
+    parsed_sheet = {}
+
+    first = True
+    for rowIdx, row in enumerate(sheet.rows):
+        if first:
+            first = False
+            continue
+
+        id = get_id(row, year)
+
+        if id is None:
+            continue
+
+        parsed_sheet[id] = {}
+
+        for colIdx, col in enumerate(row):
+
+            attribute = sheet.cell(row=1, column=colIdx+1).value
+            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
+
+            attribute = rename_attr_cb(attribute)
+            if attribute is None:
+                continue
+
+            parsed_sheet[id][attribute] = detect_type(value)
+
+    return parsed_sheet
+
 def parse_afr_expenditure(wb, year):
-    expenditures = {}
-    sheet = wb.active
+    def get_exp_aun(row, year):
+        return row[1].value
 
-    first = True
-    for rowIdx, row in enumerate(sheet.rows):
-        if first:
-            first = False
-            continue
-
-        aun = row[1].value
-
-        if aun is None:
-            continue
-
-        expenditures[aun] = {}
-
-        for colIdx, col in enumerate(row):
-
-            attribute = sheet.cell(row=1, column=colIdx+1).value
-            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
-
-            attribute = rename_afr_exp_attribute(attribute)
-            if attribute is None:
-                continue
-
-            expenditures[aun][attribute] = detect_type(value)
-
-    expenditures_sheet =  SheetDict(expenditures, "aun")
-
-    expenditures_per_adm = {}
-    sheet = wb.worksheets[1]
-
-    first = True
-    for rowIdx, row in enumerate(sheet.rows):
-        if first:
-            first = False
-            continue
-
+    def get_exp_adm_aun(row, year):
         if year == 2018 or year == 2022:
-            aun = row[1].value
-        else:
-            aun = row[0].value
+            return row[1].value
+        return row[0].value
 
-        if aun is None:
-            continue
+    def rename_afr_exp_attr(attribute):
+        new_name = rename_attribute(attribute)
+        if new_name is None:
+            return None
+        if "actual_instruction_expense" in new_name:
+            return None
 
-        expenditures_per_adm[aun] = {}
+        search = re.search(r'\d{4}$', new_name)
 
-        for colIdx, col in enumerate(row):
+        if search is None:
 
-            attribute = sheet.cell(row=1, column=colIdx+1).value
-            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
+            if new_name == "aun":
+                return None
+            if "cuurent" in new_name:
+                return None
+            if "current" in new_name:
+                return None
+            if new_name == "ctgy":
+                return None
+            if new_name == "cat":
+                return None
+            if "actual_instruction" in new_name:
+                return None
+            if new_name == "school_district":
+                return "lea_name"
 
-            attribute = rename_afr_exp_adm_attr(attribute)
-            if attribute is None:
-                continue
+            return new_name
 
-            expenditures_per_adm[aun][attribute] = detect_type(value)
-    expenditures_per_adm_sheet =  SheetDict(expenditures_per_adm, "aun")
+        id = int(search.group(0))
+        match id:
+            case 1000:
+                return "instruction"
+            case 1100:
+                return "regular_programs"
+            case 1200:
+                return "gifted_programs"
+            case 1300:
+                return "vocational_programs"
+            case 1400:
+                return "other_instructional"
+            case 1500:
+                return "nonpublic_programs"
+            case 1600:
+                return "adult_programs"
+            case 1700:
+                return "secondary_programs"
+            case 1800:
+                return "pre-k"
+            case 2000:
+                return "support_services"
+            case 2100:
+                return "personell"
+            case 2200:
+                return "staff"
+            case 2300:
+                return "administration"
+            case 2400:
+                return "health"
+            case 2500:
+                return "business"
+            case 2600:
+                return "plant_ops"
+            case 2700:
+                return "transportation"
+            case 2800:
+                return "central"
+            case 2900:
+                return "other_support"
+            case 3000:
+                return "non-instructional_services"
+            case 4000:
+                return "facai"
+            case 5000:
+                return "oefu"
+            case _:
+                print("Invalid ID!")
+                print(id)
+                print(new_name)
+                exit()
 
-    return [expenditures_sheet, expenditures_per_adm_sheet]
+    def rename_afr_exp_adm_attr(attribute):
+        new_name = rename_attribute(attribute)
+        if new_name is None:
+            return None
+        if new_name == "aun":
+            return None
+        if new_name == "ctgy":
+                return None
+        if new_name == "cat":
+            return None
+
+        if bool(re.match(r'^\d{4}\-\d{2}\_', new_name)):
+            new_name = new_name[8:]
+
+        new_name = new_name.replace("memebership", "membership")
+
+        return new_name
+
+
+    expenditures = parse_standard_sheet(wb.worksheets[0], year, rename_afr_exp_attr, get_exp_aun)
+    expenditures_dict =  SheetDict(expenditures, "aun")
+
+    expenditures_adm = parse_standard_sheet(wb.worksheets[1], year, rename_afr_exp_adm_attr, get_exp_adm_aun)
+    expenditures_adm_dict =  SheetDict(expenditures_adm, "aun")
+
+    return [expenditures_dict, expenditures_adm_dict]
+
 def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
     for classification, sheet_dicts in classified_sheet_dicts.items():
 
