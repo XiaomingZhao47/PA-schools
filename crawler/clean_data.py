@@ -64,6 +64,7 @@ def rename_attribute(attribute):
     new_name = attribute.lower()
     new_name = "_".join(new_name.split())
     new_name = new_name.replace(",", "")
+    new_name = new_name.replace("§", "")
     new_name = new_name.replace("&", "and")
     new_name = new_name.replace("district_name", "lea_name")
 
@@ -106,7 +107,6 @@ def rename_fast_fact_attribute(attribute):
         return "female"
 
     return new_name
-
 
 def parse_district_fast_facts(wb):
     districts = {}
@@ -170,8 +170,7 @@ def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
             first = False
             continue
 
-        id = get_id(row, year)
-
+        id = detect_type(get_id(row, year))
         if id is None:
             continue
 
@@ -222,8 +221,6 @@ def parse_afr_expenditure(wb, year):
                 return None
             if "actual_instruction" in new_name:
                 return None
-            if new_name == "school_district":
-                return "lea_name"
 
             return new_name
 
@@ -306,9 +303,228 @@ def parse_afr_expenditure(wb, year):
 
     return [expenditures_dict, expenditures_adm_dict]
 
+def parse_afr_revenue(wb, year):
+    def get_rbs_aun(row, year):
+        return row[1].value
+
+    def get_rpa_aun(row, year):
+        if year == 2019:
+            return row[1].value
+        return row[0].value
+
+    def get_tcem_aun(row, year):
+        return row[0].value
+
+    def rename_rbs_attr(attr):
+        new_name = rename_attribute(attr)
+
+        if new_name is None:
+            return None
+        if "total_local" in new_name:
+            return None
+        if "total_revenue" in new_name:
+            return None
+        if "%" in new_name:
+            return None
+
+        search = re.search(r'\d{4}', new_name)
+
+        if search is None:
+
+            if new_name == "aun":
+                return None
+            if "cuurent" in new_name:
+                return None
+            if "current" in new_name:
+                return None
+            if new_name == "ctgy":
+                return None
+            if new_name == "cat":
+                return None
+
+            return new_name
+
+        id = int(search.group(0))
+        match id:
+            case 6111:
+                return "local_taxes"
+            case 6500:
+                return "local_other"
+            case 7000:
+                return "state_revenue"
+            case 8000:
+                return "federal_revenue"
+            case 9000:
+                return "other revenue"
+            case _:
+                print("Invalid ID!")
+                print(id)
+                print(new_name)
+                exit()
+
+    def rename_rpa_attr(attr):
+        new_name = rename_attribute(attr)
+
+        if new_name is None:
+            return None
+        if new_name == "aun":
+            return None
+        if new_name == "cat":
+            return None
+        if "rank" in new_name:
+            return None
+        if  "total" in new_name:
+            return None
+        if "average_daily" in new_name:
+            return "adm"
+        return new_name
+
+    def rename_tcem_attr(attr):
+        new_name = rename_attribute(attr)
+
+        if new_name is None:
+            return None
+        if new_name == "aun":
+            return None
+        if "total" in new_name:
+            return None
+        if "rank" in new_name:
+            return None
+        if "steb" in new_name:
+            return new_name[5:]
+        if "equalized" in new_name:
+            return new_name[8:]
+        if "679" in new_name:
+            return new_name[4:]
+        return new_name
+
+    if year in [2013, 2017, 2018, 2022]:
+        rpa_sheet = wb.worksheets[1]
+        tcem_sheet = wb.worksheets[2]
+    else:
+        rpa_sheet = wb.worksheets[2]
+        tcem_sheet = wb.worksheets[1]
+
+    rbs = parse_standard_sheet(wb.worksheets[0], year, rename_rbs_attr, get_rbs_aun)
+    rpa = parse_standard_sheet(rpa_sheet, year, rename_rpa_attr, get_rpa_aun)
+    tcem = parse_standard_sheet(tcem_sheet, year, rename_tcem_attr, get_tcem_aun)
+
+    rbs_dict = SheetDict(rbs, "aun")
+    rpa_dict = SheetDict(rpa, "aun")
+    tcem_dict = SheetDict(tcem, "aun")
+
+    return [rbs_dict, rpa_dict, tcem_dict]
+
+def parse_aid_ratio(wb, year):
+    def rename_aid_ratio_attr(attr):
+
+        new_name = rename_attribute(attr)
+
+        if new_name is None:
+            return None
+
+        new_name = new_name.replace("market_value", "mv")
+        new_name = new_name.replace("personal_income", "pi")
+
+        if new_name == "h":
+            return None
+        if new_name == "aun":
+            return None
+        if new_name == "fiscal_year":
+            return None
+        if new_name == "career_and_technology_center_(and_participating_sd)":
+            return "lea_name"
+        if  "filter" in new_name:
+             return None
+        if "sort" in new_name:
+            return None
+        if "ctc_aun" in new_name:
+            return None
+        if "iu_aun" in new_name:
+            return None
+        if "cs_aun" in new_name:
+            return None
+        if "july_2020" in new_name: # This case and the next only apply to 2020-2021
+            return None
+        if "percent" in new_name:
+            return None
+        if "mv_/_pi" in new_name:
+            return "mv_pi_aid_ratio"
+
+        if "wadm" in new_name:
+            if "mv" in new_name or "pi" in new_name:
+                return None
+            return "wadm"
+
+        if "ratio" in new_name:
+            if "mv" in new_name:
+                return "mv_aid_ratio"
+            if "pi" in new_name:
+                return "pi_aid_ratio"
+            print("Invalid Match:")
+            print(attr)
+            exit()
+
+        if "mv" in new_name:
+            return "mv"
+        if "pi" in new_name:
+            return "pi"
+
+        return new_name
+
+    def rename_aid_ratio_iu_attr(attr):
+        new_name = rename_aid_ratio_attr(attr)
+
+        if new_name == "intermediate_unit_(and_participating_sd)":
+            return "iu_name"
+        if new_name == "lea_name":
+            return "iu_name"
+        return new_name
+
+    def get_sd_id(row, year):
+        if year <= 2016:
+            return row[0].value
+        return row[1].value
+
+    def get_iu_id(row, year):
+        if year <= 2016:
+            aun = row[0].value
+        else:
+            aun = row[1].value
+
+        if str(aun).endswith("000000"):
+            return aun
+        return None
+
+    def get_ctc_id(row, year):
+        if year <= 2016:
+            aun = row[0].value
+        else:
+            aun = row[1].value
+
+        if str(aun).endswith("07") or str(aun).endswith("57"):
+            return aun
+
+        return None
+
+    def get_cs_id(row, year):
+        if year <= 2016:
+            return row[0].value
+        return row[1].value
+
+    lea = parse_standard_sheet(wb.worksheets[0], year, rename_aid_ratio_attr, get_sd_id)
+    iu = parse_standard_sheet(wb.worksheets[1], year, rename_aid_ratio_iu_attr, get_iu_id)
+    ctc = parse_standard_sheet(wb.worksheets[2], year, rename_aid_ratio_attr, get_ctc_id)
+    cs = parse_standard_sheet(wb.worksheets[3], year, rename_aid_ratio_attr, get_cs_id)
+
+    lea_dict = SheetDict(lea | ctc | cs, "aun")
+    iu_dict = SheetDict(iu, "aun")
+
+    return [lea_dict, iu_dict]
+
+
 def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
     for classification, sheet_dicts in classified_sheet_dicts.items():
-
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
 
@@ -316,6 +532,8 @@ def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
         key_indices = {}
 
         for year, sheet_dict in dict(sorted(sheet_dicts.items())).items():
+            if not bool(sheet_dict.dict): # Doesn't write an empty dict
+                continue
 
             sheet_name = str(year)
             sheet = wb.create_sheet(title=sheet_name)
@@ -347,7 +565,7 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
-        if "Fast_Facts" not in subdirectory and "AFR_Expenditure" not in subdirectory:
+        if "Aid" not in subdirectory:
             continue
 
         for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
@@ -379,10 +597,30 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
                 afr_expenditures = parse_afr_expenditure(wb, year)
                 sheet_dicts["AFR_Expenditure"][year] = afr_expenditures[0]
                 sheet_dicts["AFR_Expenditure_Per_ADM"][year] = afr_expenditures[1]
+
+            elif "AFR_Revenue" in file:
+                if "AFR_Revenue" not in sheet_dicts:
+                    sheet_dicts["AFR_Revenue"] = {}
+                    sheet_dicts["AFR_Revenue_Per_ADM"] = {}
+                    sheet_dicts["AFR_Revenue_TCEM"] = {}
+
+
+                afr_revenues = parse_afr_revenue(wb, year)
+                sheet_dicts["AFR_Revenue"][year] = afr_revenues[0]
+                sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1]
+                sheet_dicts["AFR_Revenue_TCEM"][year] = afr_revenues[2]
+
+            elif "Aid_Ratios" in file:
+                if "Aid_Ratios_LEA" not in sheet_dicts:
+                    sheet_dicts["Aid_Ratios_LEA"] = {}
+                    sheet_dicts["Aid_Ratios_IU"] = {}
+
+                aid_ratios = parse_aid_ratio(wb, year)
+                sheet_dicts["Aid_Ratios_LEA"][year] = aid_ratios[0]
+                sheet_dicts["Aid_Ratios_IU"][year] = aid_ratios[1]
             else:
                 logger.write(f'No parser for: {file}')
                 continue
-
         write_dicts(sheet_dicts, CLEAN_DATA_DIRECTORY)
 
     logger.unindent()
