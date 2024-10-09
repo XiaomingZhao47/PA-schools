@@ -2,10 +2,9 @@ crawler/.venv/
 crawler/__pycache__/
 crawler/*.txt
 crawler/data/
-.idea
-.cache
+crawler/data-organized/
+crawler/data-clean/
 node_modules
-.DS_Store
 web-framework/server/data.db
 web-framework/server/database.db
 web-framework/node_modules
@@ -13,4 +12,8 @@ web-framework/client/node_modules
 web-framework/server/node_modules
 web-framework/server/data.db
 web-framework/server/schools_facts.db
+.idea
+.cache
 .kate-swp
+.DS_Store
+

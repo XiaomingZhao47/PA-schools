@@ -4,6 +4,7 @@ import find_data_urls
 import download_urls
 import reorganize_data
 import clean_data
+import normalize_data
 from utils import Logger
 import subprocess
 from pathlib import Path
@@ -14,7 +15,8 @@ DATA_URLS_FILE = "./data_urls.txt"
 
 DATA_DIRECTORY = "./data"
 ORGANIZED_DATA_DIRECTORY = "./data-organized"
-CLEAN_DATA_DIRECTORY = "../web-framework/server/data-clean"
+CLEAN_DATA_DIRECTORY = "./data-clean"
+NORMALIZED_DATA_DIRECTORY = "../web-framework/server/data-norm"
 LOGS_FILE = "./crawler_logs.txt"
 
 logger = Logger(LOGS_FILE)
@@ -39,9 +41,9 @@ if not os.path.exists(PDF_URLS_FILE):
     logger.newline()
     logger.write("Could not find pdf urls")
 
-    prompt_bool("  Would you like to run the pdf url finder script? (y/n)")
+    run = prompt_bool("  Would you like to run the pdf url finder script? (y/n)")
 
-    if prompt_bool:
+    if run:
         logger.newline()
         logger.write("Generating pdf urls...")
 
@@ -57,9 +59,9 @@ if not os.path.exists(DATA_URLS_FILE):
     logger.newline()
     logger.write("Could not find data urls")
 
-    prompt_bool("  Would you like to run the data url finder script? (y/n)")
+    run = prompt_bool("  Would you like to run the data url finder script? (y/n)")
 
-    if prompt_bool:
+    if run:
         logger.newline()
         logger.write("Starting Data Url Finder...")
 
@@ -72,16 +74,13 @@ if not os.path.exists(DATA_URLS_FILE):
 
 # Creates the DATA_DIRECTORY if it doesn't exist
 Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-Path(ORGANIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-Path(CLEAN_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-
 if len(os.listdir(DATA_DIRECTORY)) == 0:
     logger.newline()
     logger.write("Data directory is empty")
 
-    prompt_bool("  Would you like to run the data downloader script? (y/n)")
+    run = prompt_bool("  Would you like to run the data downloader script? (y/n)")
 
-    if prompt_bool:
+    if run:
         logger.newline()
         logger.write("Starting Data Downloader...")
         download_urls.run(DATA_URLS_FILE, DATA_DIRECTORY, logger)
@@ -91,17 +90,55 @@ if len(os.listdir(DATA_DIRECTORY)) == 0:
         logger.write("Aborting!")
         exit()
 
-if len(os.listdir(ORGANIZED_DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
+Path(ORGANIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+if False:#len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(ORGANIZED_DATA_DIRECTORY)):
+    logger.newline()
+    logger.write("Not all data has been organized")
+
+    run = prompt_bool("  Would you like to run the data organizer script? (y/n)")
+
+    if run:
+        logger.newline()
+        logger.write("Starting Data Organizer...")
+
+        reorganize_data.run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger)
+
+        logger.write("Done!")
+    else:
+        logger.write("Aborting!")
+        exit()
+
+
+Path(CLEAN_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+if False:#len(os.listdir(ORGANIZED_DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
     logger.newline()
     logger.write("Not all data has been cleaned")
 
-    prompt_bool("  Would you like to run the data cleaner script? (y/n)")
+    run = prompt_bool("  Would you like to run the data cleaner script? (y/n)")
 
-    if prompt_bool:
+    if run:
         logger.newline()
         logger.write("Starting Data Cleaner...")
 
         clean_data.run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
+
+        logger.write("Done!")
+    else:
+        logger.write("Aborting!")
+        exit()
+
+Path(NORMALIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+if len(os.listdir(CLEAN_DATA_DIRECTORY)) > len(os.listdir(NORMALIZED_DATA_DIRECTORY)):
+    logger.newline()
+    logger.write("Not all data has been normalized")
+
+    run = prompt_bool("  Would you like to run the data normalizer script? (y/n)")
+
+    if run:
+        logger.newline()
+        logger.write("Starting Data Normalizer...")
+
+        normalize_data.run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
 
         logger.write("Done!")
     else:

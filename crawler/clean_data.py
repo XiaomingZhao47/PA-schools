@@ -532,8 +532,8 @@ def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
         key_indices = {}
 
         for year, sheet_dict in dict(sorted(sheet_dicts.items())).items():
-            if not bool(sheet_dict.dict): # Doesn't write an empty dict
-                continue
+            #if not bool(sheet_dict.dict): # Doesn't write an empty dict
+            #    continue
 
             sheet_name = str(year)
             sheet = wb.create_sheet(title=sheet_name)
@@ -565,7 +565,7 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
-        if "Aid" not in subdirectory:
+        if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid_Ratios" not in subdirectory:
             continue
 
         for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
