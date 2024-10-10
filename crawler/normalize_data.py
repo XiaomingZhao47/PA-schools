@@ -16,14 +16,19 @@ def can_safely_replace(val1, val2):
     if not (type(val1) == str and type(val2) == str):
         return False
 
-    val1 = val1.lower().replace(" ", "")
-    val2 = val2.lower().replace(" ", "")
+    removal_list = [" ", ".", ","]
+    replacement_list = [("charterschool", "cs"), ("saint", "st"), ("road", "rd"), ("drive", "dr")]
 
-    val1 = val1.replace("charterschool", "cs")
-    val2 = val2.replace("charterschool", "cs")
+    val1 = val1.lower()
+    val2 = val2.lower()
 
-    val1 = val1.replace("saint", "st.")
-    val2 = val2.replace("saint", "st.")
+    for removal in removal_list:
+        val1 = val1.replace(removal, "")
+        val2 = val2.replace(removal, "")
+
+    for replacement in replacement_list:
+        val1 = val1.replace(replacement[0], replacement[1])
+        val2 = val2.replace(replacement[0], replacement[1])
 
     return val1 == val2
 
@@ -37,7 +42,7 @@ def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
     if attribute in dict[id]:
         old_val = dict[id][attribute]
         if not can_safely_replace(old_val, value):
-            logger.warn(f'Clobbering {attribute} in dict[{id}]. Replacing {old_val} with {value}');
+            logger.write(f'Clobbering {attribute} in dict[{id}]. Replacing {old_val} with {value}');
 
     dict[id][attribute] = value
 
@@ -51,7 +56,7 @@ def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
     if attribute in composite_dict[year][id]:
         old_val = composite_dict[year][id][attribute]
         if not can_safely_replace(old_val, value):
-            logger.warn(f'Clobbering {attribute} in composite_dict[{year}][{id}]. Replacing {old_val} with {value}');
+            logger.write(f'Clobbering {attribute} in composite_dict[{year}][{id}]. Replacing {old_val} with {value}');
 
     composite_dict[year][id][attribute] = value
 
@@ -62,6 +67,8 @@ class SheetDict:
 
 def parse_wb(wb, logger):
     data_dict = {}
+
+    logger.indent()
 
     for sheet in wb.worksheets:
         year = detect_type(sheet.title)
@@ -88,6 +95,8 @@ def parse_wb(wb, logger):
                     add_to_sheet_dict(logger, ius, aun, attr, value)
                 else:
                     add_to_composite_dict(logger, data_dict, aun, year, attr, value)
+
+    logger.unindent()
 
     return SheetDict(data_dict, "aun")
 
