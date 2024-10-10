@@ -30,8 +30,9 @@ class Logger:
         self.log_file.close()
 
     def warn(self, message):
-        print(f' ==================== {message} ====================')
-        self.log_file.write(f' ==================== {message} ====================')
+        print(f' =============== {message} ===============')
+        self.log_file.write(f' =============== {message} ===============')
+        self.newline()
 
 def detect_year(str):
     str = str.replace("%20", " ")

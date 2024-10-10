@@ -9,6 +9,25 @@ schools = SheetDict({}, "school_id")
 leas = SheetDict({}, "aun")
 ius = SheetDict({}, "aun")
 
+def can_safely_replace(val1, val2):
+    if val1 == val2:
+        return True
+
+    if not (type(val1) == str and type(val2) == str):
+        return False
+
+    val1 = val1.lower().replace(" ", "")
+    val2 = val2.lower().replace(" ", "")
+
+    val1 = val1.replace("charterschool", "cs")
+    val2 = val2.replace("charterschool", "cs")
+
+    val1 = val1.replace("saint", "st.")
+    val2 = val2.replace("saint", "st.")
+
+    return val1 == val2
+
+
 def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
     dict = sheet_dict.dict
 
@@ -17,7 +36,7 @@ def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
 
     if attribute in dict[id]:
         old_val = dict[id][attribute]
-        if old_val != value:
+        if not can_safely_replace(old_val, value):
             logger.warn(f'Clobbering {attribute} in dict[{id}]. Replacing {old_val} with {value}');
 
     dict[id][attribute] = value
@@ -31,7 +50,7 @@ def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
 
     if attribute in composite_dict[year][id]:
         old_val = composite_dict[year][id][attribute]
-        if old_val != value:
+        if not can_safely_replace(old_val, value):
             logger.warn(f'Clobbering {attribute} in composite_dict[{year}][{id}]. Replacing {old_val} with {value}');
 
     composite_dict[year][id][attribute] = value
@@ -53,7 +72,8 @@ def parse_wb(wb, logger):
 
             attr = col[0].value
 
-            is_lea_attr = attr in ["lea_name", "county"]
+            is_lea_attr = attr in ["lea_name", "county", "district_address_(street)", "district_address_(city)", "district_address_(state)", "district_zip_code", "website", "telephone_number"]
+            is_iu_attr = attr in ["iu_name"]
 
             for row_idx, cell in enumerate(col):
                 if row_idx == 0:
@@ -64,6 +84,8 @@ def parse_wb(wb, logger):
 
                 if is_lea_attr:
                     add_to_sheet_dict(logger, leas, aun, attr, value)
+                elif is_iu_attr:
+                    add_to_sheet_dict(logger, ius, aun, attr, value)
                 else:
                     add_to_composite_dict(logger, data_dict, aun, year, attr, value)
 
@@ -132,18 +154,16 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
 
         logger.write(f'Processing {filename}')
 
-        if "AFR_Expenditure" not in filename:
+        if "AFR" not in filename and "IU" not in filename and "Fast_Facts_District" not in filename:
             continue
 
         file = CLEAN_DATA_DIRECTORY + "/" + filename
         new_file = NORMALIZED_DATA_DIRECTORY + "/" + filename
         wb = openpyxl.open(file)
 
-        if "AFR_Expenditure" in filename:
-            dict = parse_wb(wb, logger)
-            write_composite_dict(dict, new_file)
-        else:
-            logger.write(f'No parser for {filename}')
+        dict = parse_wb(wb, logger)
+        write_composite_dict(dict, new_file)
+
 
     write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
     write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/Leas.xlsx")

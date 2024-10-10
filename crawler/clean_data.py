@@ -437,6 +437,8 @@ def parse_aid_ratio(wb, year):
             return None
         if "iu_aun" in new_name:
             return None
+        if "cyber" in new_name:
+            return None
         if "cs_aun" in new_name:
             return None
         if "july_2020" in new_name: # This case and the next only apply to 2020-2021
@@ -445,6 +447,8 @@ def parse_aid_ratio(wb, year):
             return None
         if "mv_/_pi" in new_name:
             return "mv_pi_aid_ratio"
+        if "charter_school" in new_name:
+            return "lea_name"
 
         if "wadm" in new_name:
             if "mv" in new_name or "pi" in new_name:
@@ -503,6 +507,8 @@ def parse_aid_ratio(wb, year):
         return None
 
     def get_cs_id(row, year):
+        if year < 2015:
+            return row[1].value
         if year <= 2016:
             return row[0].value
         return row[1].value

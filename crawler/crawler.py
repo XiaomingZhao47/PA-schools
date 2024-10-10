@@ -91,7 +91,7 @@ if len(os.listdir(DATA_DIRECTORY)) == 0:
         exit()
 
 Path(ORGANIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-if False:#len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(ORGANIZED_DATA_DIRECTORY)):
+if len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(ORGANIZED_DATA_DIRECTORY)):
     logger.newline()
     logger.write("Not all data has been organized")
 
