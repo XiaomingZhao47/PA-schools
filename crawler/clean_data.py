@@ -1,14 +1,9 @@
 import openpyxl
-from utils import Logger, detect_year
+from utils import Logger, detect_year, SheetDict
 import shutil
 import os
 from xls2xlsx import XLS2XLSX
 import re
-
-class SheetDict:
-    def __init__(self, dict, identifier):
-        self.dict = dict
-        self.identifier = identifier
 
 def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
     logger.write("Converting files...")

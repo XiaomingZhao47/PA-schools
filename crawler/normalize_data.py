@@ -1,92 +1,155 @@
 import openpyxl
-from utils import Logger, detect_year
+from utils import Logger, detect_year, detect_type, SheetDict
 import shutil
 import os
 from xls2xlsx import XLS2XLSX
 import re
+
+schools = SheetDict({}, "school_id")
+leas = SheetDict({}, "aun")
+ius = SheetDict({}, "aun")
+
+def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
+    dict = sheet_dict.dict
+
+    if id not in dict:
+        dict[id] = {}
+
+    if attribute in dict[id]:
+        old_val = dict[id][attribute]
+        if old_val != value:
+            logger.warn(f'Clobbering {attribute} in dict[{id}]. Replacing {old_val} with {value}');
+
+    dict[id][attribute] = value
+
+def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
+    if year not in composite_dict:
+        composite_dict[year] = {}
+
+    if id not in composite_dict[year]:
+        composite_dict[year][id] = {}
+
+    if attribute in composite_dict[year][id]:
+        old_val = composite_dict[year][id][attribute]
+        if old_val != value:
+            logger.warn(f'Clobbering {attribute} in composite_dict[{year}][{id}]. Replacing {old_val} with {value}');
+
+    composite_dict[year][id][attribute] = value
 
 class SheetDict:
     def __init__(self, dict, identifier):
         self.dict = dict
         self.identifier = identifier
 
+def parse_wb(wb, logger):
+    data_dict = {}
 
+    for sheet in wb.worksheets:
+        year = detect_type(sheet.title)
 
-
-def parse_standard_sheet(sheet, year):
-    parsed_sheet = {}
-
-    first = True
-    for rowIdx, row in enumerate(sheet.rows):
-        if first:
-            first = False
-            continue
-
-        id = detect_type(get_id(row, year))
-        if id is None:
-            continue
-
-        parsed_sheet[id] = {}
-
-        for colIdx, col in enumerate(row):
-
-            attribute = sheet.cell(row=1, column=colIdx+1).value
-            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
-
-            attribute = rename_attr_cb(attribute)
-            if attribute is None:
+        for col_idx, col in enumerate(sheet.iter_cols()):
+            if col_idx == 0:
                 continue
 
-            parsed_sheet[id][attribute] = detect_type(value)
+            attr = col[0].value
 
-    return parsed_sheet
+            is_lea_attr = attr in ["lea_name", "county"]
+
+            for row_idx, cell in enumerate(col):
+                if row_idx == 0:
+                    continue
+
+                aun = sheet.cell(row=row_idx+1, column=1).value
+                value = cell.value
+
+                if is_lea_attr:
+                    add_to_sheet_dict(logger, leas, aun, attr, value)
+                else:
+                    add_to_composite_dict(logger, data_dict, aun, year, attr, value)
+
+    return SheetDict(data_dict, "aun")
+
+def write_composite_dict(sheet_dict, filename):
+    wb = openpyxl.Workbook()
+    sheet = wb.active
+    sheet.cell(row=1, column=1).value = sheet_dict.identifier
+    sheet.cell(row=1, column=2).value = "year"
+
+    next_key_index = 3
+    key_indices = {}
+
+    rowIdx = 2
+
+    for year, year_dict in sheet_dict.dict.items():
+        for id, record in year_dict.items():
+            for record_key, attribute in record.items():
+                sheet.cell(row=rowIdx, column=1).value = id
+                sheet.cell(row=rowIdx, column=2).value = year
+
+                if record_key not in key_indices:
+                    key_indices[record_key] = next_key_index
+                    next_key_index = next_key_index + 1
+
+                sheet.cell(row=1, column = key_indices[record_key]).value = record_key
+                sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
+            rowIdx = rowIdx + 1
+
+    wb.save(filename)
+
+def write_sheet_dict(sheet_dict, filename):
+    wb = openpyxl.Workbook()
+    sheet = wb.active
+    sheet.cell(row=1, column=1).value = sheet_dict.identifier
+
+    next_key_index = 2
+    key_indices = {}
+
+    rowIdx = 2
+
+    for id, record in sheet_dict.dict.items():
+        for record_key, attribute in record.items():
+            sheet.cell(row=rowIdx, column=1).value = id
+
+            if record_key not in key_indices:
+                key_indices[record_key] = next_key_index
+                next_key_index = next_key_index + 1
+
+            sheet.cell(row=1, column = key_indices[record_key]).value = record_key
+            sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
+        rowIdx = rowIdx + 1
 
 
-def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
-    for classification, sheet_dicts in classified_sheet_dicts.items():
-        wb = openpyxl.Workbook()
-        wb.remove(wb.active)
-
-        next_key_index = 2
-        key_indices = {}
-
-        for year, sheet_dict in dict(sorted(sheet_dicts.items())).items():
-            #if not bool(sheet_dict.dict): # Doesn't write an empty dict
-            #    continue
-
-            sheet_name = str(year)
-            sheet = wb.create_sheet(title=sheet_name)
-
-            rowIdx = 2
-
-            sheet.cell(row=1, column=1).value = sheet_dict.identifier
-
-            for key, record in sheet_dict.dict.items():
-                sheet.cell(row=rowIdx, column=1).value = key
-
-                for record_key, attribute in record.items():
-                    if record_key not in key_indices:
-                        key_indices[record_key] = next_key_index
-                        next_key_index = next_key_index + 1
-
-
-                    sheet.cell(row=1, column = key_indices[record_key]).value = record_key
-
-                    sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
-                rowIdx = rowIdx + 1
-
-        wb.save(NORMALIZED_DATA_DIRECTORY + "/" + classification + ".xlsx")
+    wb.save(filename)
 
 def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
     logger.indent()
+
+    print(f'Clean Data: {CLEAN_DATA_DIRECTORY}')
 
     for filename in os.listdir(CLEAN_DATA_DIRECTORY):
         if "#" in filename:
             continue
 
-        logger.write(filename)
+        logger.write(f'Processing {filename}')
+
+        if "AFR_Expenditure" not in filename:
+            continue
+
         file = CLEAN_DATA_DIRECTORY + "/" + filename
         new_file = NORMALIZED_DATA_DIRECTORY + "/" + filename
+        wb = openpyxl.open(file)
+
+        if "AFR_Expenditure" in filename:
+            dict = parse_wb(wb, logger)
+            write_composite_dict(dict, new_file)
+        else:
+            logger.write(f'No parser for {filename}')
+
+    write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
+    write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/Leas.xlsx")
+    write_sheet_dict(ius, NORMALIZED_DATA_DIRECTORY + "/IUs.xlsx")
+
+
 
 
     logger.unindent()

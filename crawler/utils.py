@@ -1,5 +1,10 @@
 import re
 
+class SheetDict:
+    def __init__(self, dict, identifier):
+        self.dict = dict
+        self.identifier = identifier
+
 class Logger:
     def __init__(self, log_file_path):
         self.log_file = open(log_file_path, "a+")

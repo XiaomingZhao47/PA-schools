@@ -138,7 +138,7 @@ if len(os.listdir(CLEAN_DATA_DIRECTORY)) > len(os.listdir(NORMALIZED_DATA_DIRECT
         logger.newline()
         logger.write("Starting Data Normalizer...")
 
-        normalize_data.run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
+        normalize_data.run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger)
 
         logger.write("Done!")
     else:
