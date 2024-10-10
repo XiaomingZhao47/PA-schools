@@ -14,10 +14,15 @@
     "chart.js": "^4.4.4",
     "cors": "^2.8.5",
     "react-chartjs-2": "^5.2.0",
+    "react-router-dom": "^6.26.2",
     "xlsx": "^0.18.5"
   },
   "compilerOptions": {
     "target": "es2015",
-    "lib": ["dom", "dom.iterable", "esnext"]
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ]
   }
 }

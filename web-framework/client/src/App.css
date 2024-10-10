@@ -14,10 +14,41 @@ h1 {
 
 /* container */
 .App {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
+  /*display: flex;*/
+  /*flex-direction: column;*/
+  /*align-items: center;*/
+  /*padding: 20px;*/
+  text-align: center;
+}
+
+nav {
+  margin: 20px;
+}
+
+nav a {
+  margin: 0 15px;
+  text-decoration: none;
+  color: #0366d6;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+.comparison-container {
+  margin-top: 20px;
+}
+
+.school-select {
+  margin: 20px;
+  padding: 10px;
+}
+
+.chart {
+  margin-top: 30px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* tabs */
