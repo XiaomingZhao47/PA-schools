@@ -110,6 +110,18 @@ def rename_fast_fact_attribute(attribute):
     if "female_(school)" in new_name:
         return "female"
 
+    if "(street)" in new_name:
+        return "address_street"
+
+    if "(city)" in new_name:
+        return "address_city"
+
+    if  "(state)" in new_name:
+        return "address_state"
+
+    if "zip" in new_name:
+        return "address_zip_code"
+
     return new_name
 
 def parse_district_fast_facts(wb):

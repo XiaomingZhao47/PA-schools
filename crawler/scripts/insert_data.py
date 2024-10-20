@@ -25,8 +25,6 @@ def reset_table(con, logger):
     print(res4.fetchall())
     print(res5.fetchall())
 
-
-
 def insert_file(start_dir, db, filename, con, logger):
     table_name = filename.replace("_", "").replace(".xlsx", "")
     cur = con.cursor()
@@ -91,7 +89,7 @@ def insert_file(start_dir, db, filename, con, logger):
     cur.executemany(insert_query, data)
     con.commit()
 
-    res = cur.execute("SELECT * FROM AFRExpenditure")
+    res = cur.execute(f'SELECT * FROM {table_name}')
     print(res.fetchall())
 
     wb.close()

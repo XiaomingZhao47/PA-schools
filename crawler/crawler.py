@@ -48,12 +48,12 @@ def run_operation(operation_file, script_input, script_output, script_name, chec
         result = Path.exists(Path(script_input)) and len(os.listdir(script_output)) == 0
     elif check_type == "DIR_DIR":
         result = len(os.listdir(script_input)) > len(os.listdir(script_output))
-    elif check_type == "DIR_DB":
+    elif check_type == "DIR_DB" or check_type == "REQUIRE":
         result = True
     elif check_type == "SKIP":
         result = False
     else:
-        print("Invalid check type. Must be <FILE_FILE, FILE_DIR, DIR_DIR, DIR_DB, SKIP>")
+        print("Invalid check type. Must be <FILE_FILE, FILE_DIR, DIR_DIR, DIR_DB, SKIP, REQUIRE>")
         return
 
 
@@ -79,8 +79,8 @@ run_operation(find_pdf_urls, PDF_FILE, PDF_URLS_FILE, "pdf url finder", "Could n
 run_operation(find_data_urls, PDF_URLS_FILE, DATA_URLS_FILE, "data url finder", "Could not find data urls", check_type="FILE_FILE")
 run_operation(download_urls, DATA_URLS_FILE, DATA_DIRECTORY, "data downloader", "Data directory is empty", check_type="FILE_DIR")
 run_operation(reorganize_data, DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, "data organizer", "Not all data has been organized")
-run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned", check_type="SKIP")
-run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized", check_type="SKIP")
+run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned", check_type="REQUIRE")
+run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized", check_type="REQUIRE")
 run_operation(insert_data, NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, "data inserter", None, check_type="DIR_DB")
 
 logger.unindent()

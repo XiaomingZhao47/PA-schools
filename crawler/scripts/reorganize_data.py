@@ -3,7 +3,6 @@ from pathlib import Path
 import shutil
 from scripts.utils import detect_year
 
-
 def run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger):
     logger.indent()
 

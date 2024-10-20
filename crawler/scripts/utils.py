@@ -47,6 +47,27 @@ def detect_year(str):
 
     return "COULD NOT DETERMINE YEAR!!"
 
+def detect_db_type(col):
+    possible_type = "TEXT"
+
+    for cellIdx, cell in enumerate(col):
+        if cellIdx == 0:
+            continue
+
+        val = cell.value
+
+        if val is None:
+            continue
+        if isinstance(val, str):
+            return "TEXT"
+        if int(val) == val:
+            if val == 0:
+                possible_type = "INTEGER"
+                continue
+            return "INTEGER"
+        return "REAL"
+    return possible_type
+
 def detect_type(value):
     if not isinstance(value, str):
         return value

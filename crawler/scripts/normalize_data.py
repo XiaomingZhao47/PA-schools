@@ -3,7 +3,7 @@ import shutil
 import os
 import re
 from xls2xlsx import XLS2XLSX
-from scripts.utils import Logger, detect_year, detect_type, SheetDict
+from scripts.utils import Logger, detect_year, detect_type, detect_db_type, SheetDict
 
 
 schools = SheetDict({}, "school_id")
@@ -71,6 +71,7 @@ class SheetDict:
 
 def parse_wb(wb, logger):
     data_dict = {}
+    col_types = {}
 
     logger.indent()
 
@@ -78,10 +79,11 @@ def parse_wb(wb, logger):
         year = detect_type(sheet.title)
 
         for col_idx, col in enumerate(sheet.iter_cols()):
+            attr = col[0].value
+            col_types[attr] = detect_db_type(col)
+
             if col_idx == 0:
                 continue
-
-            attr = col[0].value
 
             is_lea_attr = attr in ["lea_name", "county", "district_address_(street)", "district_address_(city)", "district_address_(state)", "district_zip_code", "website", "telephone_number"]
             is_iu_attr = attr in ["iu_name"]
@@ -102,18 +104,20 @@ def parse_wb(wb, logger):
 
     logger.unindent()
 
-    return SheetDict(data_dict, "aun")
+    return (SheetDict(data_dict, "aun"), col_types)
 
-def write_composite_dict(sheet_dict, filename):
+def write_composite_dict(sheet_dict, col_types, filename):
     wb = openpyxl.Workbook()
     sheet = wb.active
-    sheet.cell(row=1, column=1).value = sheet_dict.identifier
-    sheet.cell(row=1, column=2).value = "year"
+    sheet.cell(row=1, column=1).value = sheet_dict.identifier + " PK_INTEGER"
+    sheet.cell(row=1, column=2).value = "year PK_INTEGER"
 
     next_key_index = 3
     key_indices = {}
 
     rowIdx = 2
+
+    print(f'Col Types: {col_types}')
 
     for year, year_dict in sheet_dict.dict.items():
         for id, record in year_dict.items():
@@ -125,7 +129,9 @@ def write_composite_dict(sheet_dict, filename):
                     key_indices[record_key] = next_key_index
                     next_key_index = next_key_index + 1
 
-                sheet.cell(row=1, column = key_indices[record_key]).value = record_key
+                if record_key is not None:
+                    sheet.cell(row=1, column = key_indices[record_key]).value = record_key + " " + col_types[record_key]
+                    #print(f'Record Key: {record_key} + {record_key in col_types}')
                 sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
             rowIdx = rowIdx + 1
 
@@ -174,8 +180,8 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
         new_file = NORMALIZED_DATA_DIRECTORY + "/" + filename
         wb = openpyxl.open(file)
 
-        dict = parse_wb(wb, logger)
-        write_composite_dict(dict, new_file)
+        [dict, col_types] = parse_wb(wb, logger)
+        write_composite_dict(dict, col_types, new_file)
 
         wb.close()
 
