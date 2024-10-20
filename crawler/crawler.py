@@ -16,7 +16,8 @@ DATA_URLS_FILE = "./data_urls.txt"
 DATA_DIRECTORY = "./data"
 ORGANIZED_DATA_DIRECTORY = "./data-organized"
 CLEAN_DATA_DIRECTORY = "./data-clean"
-NORMALIZED_DATA_DIRECTORY = "../web-framework/server/data-norm"
+NORMALIZED_DATA_DIRECTORY = "./data-norm"
+DATABASE_FILE = "../web-framework/server/database2.db"
 LOGS_FILE = "./crawler_logs.txt"
 
 logger = Logger(LOGS_FILE)
@@ -36,114 +37,46 @@ def prompt_bool(message):
 
 
 # Generates the PDF_URLS_FILE if it doesn't exist
+def run_operation(operation_file, script_input, script_output, script_name, check_msg, check_type = "DIR_DIR"):
+    if "DIR" in check_type:
+        Path(NORMALIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
-if not os.path.exists(PDF_URLS_FILE):
-    logger.newline()
-    logger.write("Could not find pdf urls")
-
-    run = prompt_bool("  Would you like to run the pdf url finder script? (y/n)")
-
-    if run:
-        logger.newline()
-        logger.write("Generating pdf urls...")
-
-        find_pdf_urls.run(PDF_FILE, PDF_URLS_FILE, logger)
-
-        logger.write("Done!")
+    if check_type == "FILE_FILE":
+        result = Path.exists(Path(script_input)) and not Path.exists(Path(script_output))
+    elif check_type == "FILE_DIR":
+        result = Path.exists(Path(script_input)) and len(os.listdir(script_output)) == 0
+    elif check_type == "DIR_DIR":
+        result = len(os.listdir(script_input)) > len(os.listdir(script_output))
+    elif check_type == "DIR_DB":
+        result = True
     else:
-        logger.write("Aborting!")
-        exit()
+        print("Invalid check type. Must be <FILE_FILE, FILE_DIR, DIR_DIR, DIR_DB>")
+        return
 
-# Generates the DATA_URLS_FILE if it doesn't exist
-if not os.path.exists(DATA_URLS_FILE):
-    logger.newline()
-    logger.write("Could not find data urls")
 
-    run = prompt_bool("  Would you like to run the data url finder script? (y/n)")
-
-    if run:
+    if result:
         logger.newline()
-        logger.write("Starting Data Url Finder...")
+        logger.write(check_msg)
 
-        find_data_urls.run(PDF_URLS_FILE, DATA_URLS_FILE, logger)
+        run = prompt_bool(f'  Would you like to run the {script_name} script? (y/n)')
 
-        logger.write("Done!")
-    else:
-        logger.write("Aborting!")
-        exit()
+        if run:
+            logger.newline()
+            logger.write(f'Starting {script_name} script...')
 
-# Creates the DATA_DIRECTORY if it doesn't exist
-Path(DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-if len(os.listdir(DATA_DIRECTORY)) == 0:
-    logger.newline()
-    logger.write("Data directory is empty")
+            operation_file.run(script_input, script_output, logger)
 
-    run = prompt_bool("  Would you like to run the data downloader script? (y/n)")
+            logger.write("Done!")
+        else:
+            logger.write("Aborting!")
+            exit()
 
-    if run:
-        logger.newline()
-        logger.write("Starting Data Downloader...")
-        download_urls.run(DATA_URLS_FILE, DATA_DIRECTORY, logger)
-
-        logger.write("Done!")
-    else:
-        logger.write("Aborting!")
-        exit()
-
-Path(ORGANIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-if len(os.listdir(DATA_DIRECTORY)) > len(os.listdir(ORGANIZED_DATA_DIRECTORY)):
-    logger.newline()
-    logger.write("Not all data has been organized")
-
-    run = prompt_bool("  Would you like to run the data organizer script? (y/n)")
-
-    if run:
-        logger.newline()
-        logger.write("Starting Data Organizer...")
-
-        reorganize_data.run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger)
-
-        logger.write("Done!")
-    else:
-        logger.write("Aborting!")
-        exit()
-
-
-Path(CLEAN_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-if False:#len(os.listdir(ORGANIZED_DATA_DIRECTORY)) > len(os.listdir(CLEAN_DATA_DIRECTORY)):
-    logger.newline()
-    logger.write("Not all data has been cleaned")
-
-    run = prompt_bool("  Would you like to run the data cleaner script? (y/n)")
-
-    if run:
-        logger.newline()
-        logger.write("Starting Data Cleaner...")
-
-        clean_data.run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
-
-        logger.write("Done!")
-    else:
-        logger.write("Aborting!")
-        exit()
-
-Path(NORMALIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
-if len(os.listdir(CLEAN_DATA_DIRECTORY)) > len(os.listdir(NORMALIZED_DATA_DIRECTORY)):
-    logger.newline()
-    logger.write("Not all data has been normalized")
-
-    run = prompt_bool("  Would you like to run the data normalizer script? (y/n)")
-
-    if run:
-        logger.newline()
-        logger.write("Starting Data Normalizer...")
-
-        normalize_data.run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger)
-
-        logger.write("Done!")
-    else:
-        logger.write("Aborting!")
-        exit()
+run_operation(find_pdf_urls, PDF_FILE, PDF_URLS_FILE, "pdf url finder", "Could not find pdf urls", check_type="FILE_FILE")
+run_operation(find_data_urls, PDF_URLS_FILE, DATA_URLS_FILE, "data url finder", "Could not find data urls", check_type="FILE_FILE")
+run_operation(download_urls, DATA_URLS_FILE, DATA_DIRECTORY, "data downloader", "Data directory is empty", check_type="FILE_DIR")
+run_operation(reorganize_data, DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, "data organizer", "Not all data has been organized")
+run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned")
+run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized")
 
 logger.unindent()
 logger.write("Done!")

@@ -77,6 +77,9 @@ def rename_fast_fact_attribute(attribute):
     if "2_or_more_races" in new_name:
         return new_name.replace("2_or_more_races", "multiracial")
 
+    if "gifted" in new_name:
+        return "gifted"
+
     if "american_indian/alaskan_native" in new_name:
         return "ai_an"
 
@@ -84,16 +87,22 @@ def rename_fast_fact_attribute(attribute):
         return "african_american"
 
     if "career_and_technical_center" in new_name:
-        return new_name.replace("career_and_technical_center", "ctc")
+        new_name.replace("career_and_technical_center", "ctc")
 
     if "native_hawaiian_or_other_pacific_islander" in new_name:
         return "nh_pi"
+
+    if "enrollment_in" in new_name:
+        return "ctc_enrollment"
+
+    if "charter_school" in new_name:
+        return "cs_enrollment"
 
     if "intermediate_unit" in new_name:
         return new_name.replace("intermediate_unit", "iu")
 
     if "geographic_size" in new_name:
-        return "district_size_sq_mi"
+        return "district_size"
 
     if "male_(school)" in new_name:
         return "male"
@@ -238,7 +247,7 @@ def parse_afr_expenditure(wb, year):
             case 1700:
                 return "secondary_programs"
             case 1800:
-                return "pre-k"
+                return "pre_k"
             case 2000:
                 return "support_services"
             case 2100:
@@ -260,7 +269,7 @@ def parse_afr_expenditure(wb, year):
             case 2900:
                 return "other_support"
             case 3000:
-                return "non-instructional_services"
+                return "noninstructional_services"
             case 4000:
                 return "facai"
             case 5000:
@@ -286,6 +295,10 @@ def parse_afr_expenditure(wb, year):
             new_name = new_name[8:]
 
         new_name = new_name.replace("memebership", "membership")
+        new_name = new_name.replace("average_daily_membership", "adm")
+
+        if not (new_name == "adm" or new_name == "weighted_adm"):
+            return None
 
         return new_name
 
@@ -350,7 +363,7 @@ def parse_afr_revenue(wb, year):
             case 8000:
                 return "federal_revenue"
             case 9000:
-                return "other revenue"
+                return "other_revenue"
             case _:
                 print("Invalid ID!")
                 print(id)
@@ -450,10 +463,12 @@ def parse_aid_ratio(wb, year):
         if "charter_school" in new_name:
             return "lea_name"
 
-        if "wadm" in new_name:
+        new_name = new_name.replace("wadm", "weighted_adm")
+
+        if "weighted_adm" in new_name:
             if "mv" in new_name or "pi" in new_name:
                 return None
-            return "wadm"
+            return "weighted_adm"
 
         if "ratio" in new_name:
             if "mv" in new_name:

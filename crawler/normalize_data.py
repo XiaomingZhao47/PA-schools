@@ -39,6 +39,9 @@ def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
     if id not in dict:
         dict[id] = {}
 
+    if value is None:
+        return
+
     if attribute in dict[id]:
         old_val = dict[id][attribute]
         if not can_safely_replace(old_val, value):
@@ -163,7 +166,7 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
 
         logger.write(f'Processing {filename}')
 
-        if "AFR" not in filename and "IU" not in filename and "Fast_Facts_District" not in filename:
+        if "AFR" not in filename and "IU" not in filename and "Fast_Facts_District" not in filename and "LEA" not in filename:
             continue
 
         file = CLEAN_DATA_DIRECTORY + "/" + filename
@@ -175,7 +178,7 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
 
 
     write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
-    write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/Leas.xlsx")
+    write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/LEAs.xlsx")
     write_sheet_dict(ius, NORMALIZED_DATA_DIRECTORY + "/IUs.xlsx")
 
 
