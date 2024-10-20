@@ -1,18 +1,19 @@
-crawler/.venv/
-crawler/__pycache__/
 crawler/*.txt
-crawler/data/
-crawler/data-organized/
-crawler/data-clean/
-node_modules
+crawler/data/*
+!crawler/data/TeamProject.pdf
 web-framework/server/data.db
 web-framework/server/database.db
 web-framework/node_modules
 web-framework/client/node_modules
 web-framework/server/node_modules
 web-framework/server/data.db
+
+node_modules
+__pycache__
+
 .idea
 .cache
 .kate-swp
 .DS_Store
+.venv
 

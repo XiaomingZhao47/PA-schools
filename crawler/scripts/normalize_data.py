@@ -1,9 +1,10 @@
 import openpyxl
-from utils import Logger, detect_year, detect_type, SheetDict
 import shutil
 import os
-from xls2xlsx import XLS2XLSX
 import re
+from xls2xlsx import XLS2XLSX
+from scripts.utils import Logger, detect_year, detect_type, SheetDict
+
 
 schools = SheetDict({}, "school_id")
 leas = SheetDict({}, "aun")

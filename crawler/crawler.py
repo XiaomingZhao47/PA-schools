@@ -1,22 +1,22 @@
 import os
-import find_pdf_urls
-import find_data_urls
-import download_urls
-import reorganize_data
-import clean_data
-import normalize_data
-from utils import Logger
+from scripts import find_pdf_urls
+from scripts import find_data_urls
+from scripts import download_urls
+from scripts import reorganize_data
+from scripts import clean_data
+from scripts import normalize_data
+from scripts.utils import Logger
 import subprocess
 from pathlib import Path
 
-PDF_FILE = "./TeamProject.pdf"
-PDF_URLS_FILE = "./pdf_urls.txt"
-DATA_URLS_FILE = "./data_urls.txt"
+PDF_FILE = "./data/TeamProject.pdf"
+PDF_URLS_FILE = "./data/pdf_urls.txt"
+DATA_URLS_FILE = "./data/data_urls.txt"
 
-DATA_DIRECTORY = "./data"
-ORGANIZED_DATA_DIRECTORY = "./data-organized"
-CLEAN_DATA_DIRECTORY = "./data-clean"
-NORMALIZED_DATA_DIRECTORY = "./data-norm"
+DATA_DIRECTORY = "./data/data-raw"
+ORGANIZED_DATA_DIRECTORY = "./data/data-organized"
+CLEAN_DATA_DIRECTORY = "./data/data-clean"
+NORMALIZED_DATA_DIRECTORY = "./data/data-norm"
 DATABASE_FILE = "../web-framework/server/database2.db"
 LOGS_FILE = "./crawler_logs.txt"
 

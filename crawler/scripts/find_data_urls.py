@@ -1,7 +1,7 @@
 from lxml import html
 import tldextract
 import requests
-from utils import detect_year, Logger
+from scripts.utils import detect_year
 
 def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
     logger.indent()
