@@ -3,6 +3,7 @@ import ChartVisualization from './components/ChartVisualization';
 import axios from 'axios';
 import './App.css';
 import DemographicComparison from './components/DemographicComparison';
+import CityComparison from './components/CityComparison';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 
 const App: React.FC = () => {
@@ -33,6 +34,7 @@ const App: React.FC = () => {
                 <nav>
                     <Link to="/">Home</Link>
                     <Link to="/compare">Compare Schools</Link>
+                    <Link to="/compare-cities">Compare by Cities</Link>
                 </nav>
 
                 <Routes>
@@ -45,6 +47,11 @@ const App: React.FC = () => {
                     <Route
                         path="/compare"
                         element={<DemographicComparison demographicData={demographicData} />}
+                    />
+                    {/* City comparison page */}
+                    <Route
+                        path="/compare-cities"
+                        element={<CityComparison />}
                     />
                 </Routes>
             </div>
