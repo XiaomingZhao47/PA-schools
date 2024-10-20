@@ -130,6 +130,7 @@ def write_composite_dict(sheet_dict, filename):
             rowIdx = rowIdx + 1
 
     wb.save(filename)
+    wb.close()
 
 def write_sheet_dict(sheet_dict, filename):
     wb = openpyxl.Workbook()
@@ -155,11 +156,10 @@ def write_sheet_dict(sheet_dict, filename):
 
 
     wb.save(filename)
+    wb.close()
 
 def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
     logger.indent()
-
-    print(f'Clean Data: {CLEAN_DATA_DIRECTORY}')
 
     for filename in os.listdir(CLEAN_DATA_DIRECTORY):
         if "#" in filename:
@@ -177,6 +177,7 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
         dict = parse_wb(wb, logger)
         write_composite_dict(dict, new_file)
 
+        wb.close()
 
     write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
     write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/LEAs.xlsx")

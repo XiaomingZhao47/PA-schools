@@ -573,6 +573,7 @@ def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
                 rowIdx = rowIdx + 1
 
         wb.save(CLEAN_DATA_DIRECTORY + "/" + classification + ".xlsx")
+        wb.close()
 
 def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     logger.write("Cleaning Data...")
@@ -636,7 +637,9 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
                 sheet_dicts["Aid_Ratios_IU"][year] = aid_ratios[1]
             else:
                 logger.write(f'No parser for: {file}')
+                wb.close()
                 continue
+            wb.close()
         write_dicts(sheet_dicts, CLEAN_DATA_DIRECTORY)
 
     logger.unindent()
