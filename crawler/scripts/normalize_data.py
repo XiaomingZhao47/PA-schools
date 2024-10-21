@@ -64,10 +64,28 @@ def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
 
     composite_dict[year][id][attribute] = value
 
-class SheetDict:
-    def __init__(self, dict, identifier):
-        self.dict = dict
-        self.identifier = identifier
+def merge_composite_dicts(dest, source):
+    dest_dict = dest.dict
+    source_dict = source.dict
+
+    for year, year_dict in source_dict.items():
+        if year not in dest_dict:
+            dest_dict[year] = {}
+
+        for id, id_dict in year_dict.items():
+            if id not in dest_dict[year]:
+                dest_dict[year][id] = {}
+
+            dest_dict[year][id].update(id_dict)
+            #print(f'Yearss: {dest_dict[year]}')
+
+        #if id not in dest_dict[year].keys():
+        #    dest_dict[year][id] = {}
+
+    if not (dest.identifier == "" or dest.identifier == source.identifier):
+        logger.warn(f'Dicts have different identifier. Source: {source.identifier}, Dest: {dest.identifier}')
+
+    dest.identifier = source.identifier
 
 def parse_wb(wb, logger):
     data_dict = {}
@@ -92,6 +110,8 @@ def parse_wb(wb, logger):
                 if row_idx == 0:
                     continue
 
+
+
                 aun = sheet.cell(row=row_idx+1, column=1).value
                 value = cell.value
 
@@ -109,6 +129,7 @@ def parse_wb(wb, logger):
 def write_composite_dict(sheet_dict, col_types, filename):
     wb = openpyxl.Workbook()
     sheet = wb.active
+
     sheet.cell(row=1, column=1).value = sheet_dict.identifier + " PK_INTEGER"
     sheet.cell(row=1, column=2).value = "year PK_INTEGER"
 
@@ -117,7 +138,8 @@ def write_composite_dict(sheet_dict, col_types, filename):
 
     rowIdx = 2
 
-    print(f'Col Types: {col_types}')
+
+
 
     for year, year_dict in sheet_dict.dict.items():
         for id, record in year_dict.items():
@@ -167,23 +189,37 @@ def write_sheet_dict(sheet_dict, filename):
 def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
     logger.indent()
 
-    for filename in os.listdir(CLEAN_DATA_DIRECTORY):
-        if "#" in filename:
-            continue
+    for subdirectory in os.listdir(CLEAN_DATA_DIRECTORY):
+        data_dict = SheetDict({}, "")
+        col_types_dict = {}
 
-        logger.write(f'Processing {filename}')
+        new_file = NORMALIZED_DATA_DIRECTORY + "/" + subdirectory + ".xlsx"
+        for filename in os.listdir(CLEAN_DATA_DIRECTORY + "/" + subdirectory):
+            if "#" in filename:
+                continue
 
-        if "AFR" not in filename and "IU" not in filename and "Fast_Facts_District" not in filename and "LEA" not in filename:
-            continue
+            logger.write(f'Processing {filename}')
+            if "AFR_Revenue" not in filename and "IU" not in filename and "Fast_Facts_District" not in filename and "LEA" not in filename:
+                continue
 
-        file = CLEAN_DATA_DIRECTORY + "/" + filename
-        new_file = NORMALIZED_DATA_DIRECTORY + "/" + filename
-        wb = openpyxl.open(file)
+            file = CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
 
-        [dict, col_types] = parse_wb(wb, logger)
-        write_composite_dict(dict, col_types, new_file)
+            #print(f'File: {file}')
 
-        wb.close()
+            wb = openpyxl.open(file)
+
+            [dict, col_types] = parse_wb(wb, logger)
+
+
+            merge_composite_dicts(data_dict, dict)
+
+            col_types_dict.update(col_types)
+
+            wb.close()
+
+        #print(f'Data dict at end: {data_dict}')
+        write_composite_dict(data_dict, col_types_dict, new_file)
+
 
     write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
     write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/LEAs.xlsx")

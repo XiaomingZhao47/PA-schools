@@ -3,6 +3,7 @@ import shutil
 import os
 import re
 from xls2xlsx import XLS2XLSX
+from pathlib import Path
 from scripts.utils import Logger, detect_year, SheetDict
 
 def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
@@ -111,16 +112,16 @@ def rename_fast_fact_attribute(attribute):
         return "female"
 
     if "(street)" in new_name:
-        return "address_street"
+        return new_name.replace("(street)", "street")
 
     if "(city)" in new_name:
-        return "address_city"
+        return new_name.replace("(city)", "city")
 
     if  "(state)" in new_name:
-        return "address_state"
+        return new_name.replace("(state)", "state")
 
     if "zip" in new_name:
-        return "address_zip_code"
+        return new_name.replace("zip_code", "address_zip")
 
     return new_name
 
@@ -551,7 +552,9 @@ def parse_aid_ratio(wb, year):
     return [lea_dict, iu_dict]
 
 
-def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
+def write_dicts(classified_sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY):
+
+    Path(CLEAN_DATA_DIRECTORY + "/" + subdirectory).mkdir(parents=True, exist_ok=True)
     for classification, sheet_dicts in classified_sheet_dicts.items():
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
@@ -584,7 +587,7 @@ def write_dicts(classified_sheet_dicts, CLEAN_DATA_DIRECTORY):
                     sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
                 rowIdx = rowIdx + 1
 
-        wb.save(CLEAN_DATA_DIRECTORY + "/" + classification + ".xlsx")
+        wb.save(CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + classification + ".xlsx")
         wb.close()
 
 def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
@@ -621,22 +624,22 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
             elif "AFR_Expenditure" in file:
                 if "AFR_Expenditure" not in sheet_dicts:
                     sheet_dicts["AFR_Expenditure"] = {}
-                    sheet_dicts["AFR_Expenditure_Per_ADM"] = {}
+                    #sheet_dicts["AFR_Expenditure_Per_ADM"] = {}
 
                 afr_expenditures = parse_afr_expenditure(wb, year)
                 sheet_dicts["AFR_Expenditure"][year] = afr_expenditures[0]
-                sheet_dicts["AFR_Expenditure_Per_ADM"][year] = afr_expenditures[1]
+                #sheet_dicts["AFR_Expenditure_Per_ADM"][year] = afr_expenditures[1] Doesn't provide new data
 
             elif "AFR_Revenue" in file:
                 if "AFR_Revenue" not in sheet_dicts:
                     sheet_dicts["AFR_Revenue"] = {}
-                    sheet_dicts["AFR_Revenue_Per_ADM"] = {}
+                    #sheet_dicts["AFR_Revenue_Per_ADM"] = {}
                     sheet_dicts["AFR_Revenue_TCEM"] = {}
 
 
                 afr_revenues = parse_afr_revenue(wb, year)
                 sheet_dicts["AFR_Revenue"][year] = afr_revenues[0]
-                sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1]
+                #sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1] Doesn't provide new data
                 sheet_dicts["AFR_Revenue_TCEM"][year] = afr_revenues[2]
 
             elif "Aid_Ratios" in file:
@@ -652,7 +655,7 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
                 wb.close()
                 continue
             wb.close()
-        write_dicts(sheet_dicts, CLEAN_DATA_DIRECTORY)
+        write_dicts(sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY)
 
     logger.unindent()
     logger.write("Done!")

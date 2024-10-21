@@ -32,7 +32,8 @@ def insert_file(start_dir, db, filename, con, logger):
     wb = openpyxl.open(start_dir + "/" + filename)
     sheet = wb.active
 
-    data = []
+    if len(list(sheet.rows)) < 2:
+        return
 
     raw_attrs = tuple(cell.value.split(" ") for cell in list(sheet.rows)[0])
     attrs = []
@@ -90,7 +91,7 @@ def insert_file(start_dir, db, filename, con, logger):
     con.commit()
 
     res = cur.execute(f'SELECT * FROM {table_name}')
-    print(res.fetchall())
+    #print(res.fetchall())
 
     wb.close()
 

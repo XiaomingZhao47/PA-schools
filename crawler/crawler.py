@@ -40,7 +40,7 @@ def prompt_bool(message):
 # Generates the PDF_URLS_FILE if it doesn't exist
 def run_operation(operation_file, script_input, script_output, script_name, check_msg, check_type = "DIR_DIR"):
     if "_DIR" in check_type:
-        Path(NORMALIZED_DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+        Path(script_output).mkdir(parents=True, exist_ok=True)
 
     if check_type == "FILE_FILE":
         result = Path.exists(Path(script_input)) and not Path.exists(Path(script_output))
@@ -79,7 +79,7 @@ run_operation(find_pdf_urls, PDF_FILE, PDF_URLS_FILE, "pdf url finder", "Could n
 run_operation(find_data_urls, PDF_URLS_FILE, DATA_URLS_FILE, "data url finder", "Could not find data urls", check_type="FILE_FILE")
 run_operation(download_urls, DATA_URLS_FILE, DATA_DIRECTORY, "data downloader", "Data directory is empty", check_type="FILE_DIR")
 run_operation(reorganize_data, DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, "data organizer", "Not all data has been organized")
-run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned", check_type="REQUIRE")
+run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned", check_type="SKIP")
 run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized", check_type="REQUIRE")
 run_operation(insert_data, NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, "data inserter", None, check_type="DIR_DB")
 
