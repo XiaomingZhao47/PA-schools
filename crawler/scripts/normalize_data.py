@@ -17,8 +17,11 @@ def can_safely_replace(val1, val2):
     if not (type(val1) == str and type(val2) == str):
         return False
 
-    removal_list = [" ", ".", ","]
-    replacement_list = [("charterschool", "cs"), ("saint", "st"), ("road", "rd"), ("drive", "dr")]
+    val1 = val1.replace(" CHS", "CS")
+    val2 = val2.replace(" CHS", "CS")
+
+    removal_list = [" ", ".", ",", "-", "&"]
+    replacement_list = [("charterschool", "cs"), ("charterhighschool", "cs"), ("charterscholars", "cs"), ("saint", "st"), ("road", "rd"), ("drive", "dr"), ("careerandtechnicalcenter", "ctc"), ("careertechnicalcenter", "ctc"), ("schooldistrict", "sd"), ("charterelementaryschool", "ces")]
 
     val1 = val1.lower()
     val2 = val2.lower()
@@ -57,6 +60,9 @@ def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
     if id not in composite_dict[year]:
         composite_dict[year][id] = {}
 
+    if value is None:
+        return
+
     if attribute in composite_dict[year][id]:
         old_val = composite_dict[year][id][attribute]
         if not can_safely_replace(old_val, value):
@@ -87,7 +93,7 @@ def merge_composite_dicts(dest, source):
 
     dest.identifier = source.identifier
 
-def parse_wb(wb, logger):
+def parse_standard_wb(wb, logger):
     data_dict = {}
     col_types = {}
 
@@ -103,14 +109,13 @@ def parse_wb(wb, logger):
             if col_idx == 0:
                 continue
 
-            is_lea_attr = attr in ["lea_name", "county", "district_address_(street)", "district_address_(city)", "district_address_(state)", "district_zip_code", "website", "telephone_number"]
+            is_lea_attr = attr in ["lea_name", "county", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
             is_iu_attr = attr in ["iu_name"]
+            #is_school_attr = attr in ["school_name", "school_address_street", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
 
             for row_idx, cell in enumerate(col):
                 if row_idx == 0:
                     continue
-
-
 
                 aun = sheet.cell(row=row_idx+1, column=1).value
                 value = cell.value
@@ -119,12 +124,67 @@ def parse_wb(wb, logger):
                     add_to_sheet_dict(logger, leas, aun, attr, value)
                 elif is_iu_attr:
                     add_to_sheet_dict(logger, ius, aun, attr, value)
+                    #logger.warn(f'Cannot add to iu dict. Attr: {attr}, Val: {value}' )
                 else:
                     add_to_composite_dict(logger, data_dict, aun, year, attr, value)
 
-    logger.unindent()
 
+    logger.unindent()
     return (SheetDict(data_dict, "aun"), col_types)
+
+def parse_ffs_wb(wb, logger):
+    data_dict = {}
+    col_types = {}
+
+    logger.indent()
+
+    for sheet in wb.worksheets:
+        year = detect_type(sheet.title)
+
+        for col_idx, col in enumerate(sheet.iter_cols()):
+            attr = col[0].value
+            col_types[attr] = detect_db_type(col)
+
+        for row_idx, row in enumerate(sheet.iter_rows()):
+            if row_idx == 0:
+                continue
+
+            for col_idx, cell in enumerate(row):
+                attr = sheet.cell(row=1, column=col_idx+1).value
+                school_id = sheet.cell(row=row_idx+1, column=1).value
+                aun = sheet.cell(row=row_idx+1, column=4).value
+                value = cell.value
+
+                if attr is None:
+                    continue
+                if attr == "school_id":
+                    continue
+
+                is_lea_attr = attr in ["lea_name", "county", "lea_name", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
+                is_iu_attr = attr in ["iu_name"]
+                is_school_attr = attr in ["school_name", "aun", "school_address_street", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
+
+                if is_lea_attr:
+                    pass
+                    #add_to_sheet_dict(logger, leas, aun, attr, value)
+                    #logger.warn(f'Cannot add to lea dict. Attr: {attr}, Val: {value}')
+                elif is_iu_attr:
+                    logger.warn(f'Cannot add to iu dict. Attr: {attr}, Val: {value}')
+                elif is_school_attr:
+                    add_to_sheet_dict(logger, schools, school_id, attr, value)
+                else:
+                    add_to_composite_dict(logger, data_dict, school_id, year, attr, value)
+
+                # This bit of code is absolutely attrocious. It is meant to handle CTCs, which are LEAs but not SDs!
+                school_name = sheet.cell(row=row_idx+1, column=2).value
+                lea_name = sheet.cell(row=row_idx+1, column=3).value
+                if school_name == lea_name and is_school_attr and attr != "aun":
+                    #logger.write("Doing garbage")
+                    #logger.write(f'fast fact attr: school_id: {school_id}, year: {year}, attr: {attr}. aun: {aun}')
+                    add_to_sheet_dict(logger, leas, aun, attr.replace("school_", "lea_"), value)
+
+    logger.unindent()
+    return (SheetDict(data_dict, "school_id"), col_types)
 
 def write_composite_dict(sheet_dict, col_types, filename):
     wb = openpyxl.Workbook()
@@ -137,9 +197,6 @@ def write_composite_dict(sheet_dict, col_types, filename):
     key_indices = {}
 
     rowIdx = 2
-
-
-
 
     for year, year_dict in sheet_dict.dict.items():
         for id, record in year_dict.items():
@@ -163,7 +220,7 @@ def write_composite_dict(sheet_dict, col_types, filename):
 def write_sheet_dict(sheet_dict, filename):
     wb = openpyxl.Workbook()
     sheet = wb.active
-    sheet.cell(row=1, column=1).value = sheet_dict.identifier
+    sheet.cell(row=1, column=1).value = sheet_dict.identifier + " PK_INTEGER"
 
     next_key_index = 2
     key_indices = {}
@@ -174,11 +231,16 @@ def write_sheet_dict(sheet_dict, filename):
         for record_key, attribute in record.items():
             sheet.cell(row=rowIdx, column=1).value = id
 
+            if "aun" in record_key or "zip" in record_key or "phone" in record_key:
+                key_type = " INTEGER"
+            else:
+                key_type = " TEXT"
+
             if record_key not in key_indices:
                 key_indices[record_key] = next_key_index
                 next_key_index = next_key_index + 1
 
-            sheet.cell(row=1, column = key_indices[record_key]).value = record_key
+            sheet.cell(row=1, column = key_indices[record_key]).value = record_key + key_type
             sheet.cell(row=rowIdx, column=key_indices[record_key]).value = attribute
         rowIdx = rowIdx + 1
 
@@ -199,7 +261,7 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
                 continue
 
             logger.write(f'Processing {filename}')
-            if "AFR_Revenue" not in filename and "IU" not in filename and "Fast_Facts_District" not in filename and "LEA" not in filename:
+            if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename:
                 continue
 
             file = CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
@@ -208,8 +270,10 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
 
             wb = openpyxl.open(file)
 
-            [dict, col_types] = parse_wb(wb, logger)
-
+            if "Fast_Facts_School" in filename:
+                [dict, col_types] = parse_ffs_wb(wb, logger)
+            else:
+                [dict, col_types] = parse_standard_wb(wb, logger)
 
             merge_composite_dicts(data_dict, dict)
 

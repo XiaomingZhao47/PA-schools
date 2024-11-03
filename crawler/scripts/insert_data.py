@@ -86,11 +86,14 @@ def insert_file(start_dir, db, filename, con, logger):
 
         data.append(tuple(cell.value for cell in row))
 
-    cur.execute(create_query)
-    cur.executemany(insert_query, data)
-    con.commit()
+    try:
+        cur.execute(create_query)
+        cur.executemany(insert_query, data)
+        con.commit()
+    except:
+        logger.warn(f'SQL Error. \nCreate query: {create_query}\n')
 
-    res = cur.execute(f'SELECT * FROM {table_name}')
+        res = cur.execute(f'SELECT * FROM {table_name}')
     #print(res.fetchall())
 
     wb.close()
@@ -101,6 +104,9 @@ def run(NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, logger):
     logger.indent()
 
     con = sqlite3.connect(DATABASE_FILE)
+
+
+
     reset_table(con, logger)
 
     for filename in os.listdir(NORMALIZED_DATA_DIRECTORY):

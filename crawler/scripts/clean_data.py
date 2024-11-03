@@ -4,7 +4,7 @@ import os
 import re
 from xls2xlsx import XLS2XLSX
 from pathlib import Path
-from scripts.utils import Logger, detect_year, SheetDict
+from scripts.utils import Logger, detect_year, SheetDict, detect_type
 
 def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
     logger.write("Converting files...")
@@ -34,25 +34,6 @@ def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
     logger.unindent()
     logger.write("Done!")
 
-def detect_type(value):
-    if not isinstance(value, str):
-        return value
-
-    new_value = value.strip()
-
-    if new_value.isdigit():
-        return int(new_value)
-
-    # Matches floating point value
-    if bool(re.match(r'^[+-]?(\d+(\.\d*)?|\.\d+)$', new_value)):
-        return float(new_value)
-
-    # Matches phone number
-    if bool(re.match(r'\d{3}\-\d{3}\-\d{4}', new_value)):
-        return int(new_value[0:3] + new_value[4:7] + new_value[8:12])
-
-    return new_value
-
 def rename_attribute(attribute):
     if attribute == None:
         return None
@@ -72,8 +53,8 @@ def rename_attribute(attribute):
 def rename_fast_fact_attribute(attribute):
     new_name = rename_attribute(attribute)
 
-    new_name = new_name.replace("_-_percent_enrollment_by_student_groups", "")
-    new_name = new_name.replace("_-_percent_enrollment_by_race/ethnicity", "")
+    new_name = new_name.replace("_-_percent_enrollment_by_student_groups", "").replace("district_", "lea_")
+    new_name = new_name.replace("_-_percent_enrollment_by_race/ethnicity", "").replace("district_", "lea")
 
     if "2_or_more_races" in new_name:
         return new_name.replace("2_or_more_races", "multiracial")
@@ -123,9 +104,23 @@ def rename_fast_fact_attribute(attribute):
     if "zip" in new_name:
         return new_name.replace("zip_code", "address_zip")
 
+    if "telephone_number" in new_name:
+        return new_name.replace("telephone_number", "telephone")
+
     return new_name
 
 def parse_district_fast_facts(wb):
+    def rename_district_fast_facts_attribute(attr):
+        new_name = rename_fast_fact_attribute(attr)
+        if new_name is None:
+            return None
+        if new_name == "website":
+            return "lea_website"
+        if new_name == "telephone":
+            return "lea_telephone"
+
+        return new_name
+
     districts = {}
     sheet = wb.active
 
@@ -137,20 +132,35 @@ def parse_district_fast_facts(wb):
 
         district_name = row[0].value
         aun = detect_type(row[1].value)
-        attribute = rename_fast_fact_attribute(row[2].value)
+        attr = rename_district_fast_facts_attribute(row[2].value)
         value = detect_type(row[3].value)
 
-        if "offered" in attribute:
+        if attr is None:
+            continue
+        if "offered" in attr:
             continue
 
         if aun not in districts:
             districts[aun] = {"lea_name": district_name}
 
-        districts[aun][attribute] = value
+        districts[aun][attr] = value
 
     return SheetDict(districts, "aun")
 
 def parse_school_fast_facts(wb):
+    def rename_school_fast_facts_attribute(attr):
+        new_name = rename_fast_fact_attribute(attr)
+        if new_name is None:
+            return None
+        if new_name == "website":
+            return "school_website"
+        if new_name == "telephone":
+            return "school_telephone"
+        if new_name == "iu_website":
+            return None
+        if new_name == "iu_name":
+            return None
+        return new_name
 
     schools = {}
     sheet = wb.active
@@ -161,20 +171,22 @@ def parse_school_fast_facts(wb):
             first = False
             continue
 
-        district_name = row[0].value
+        lea_name = row[0].value
         school_name = row[1].value
         aun = detect_type(row[2].value)
         school_id = detect_type(row[3].value)
-        attribute = rename_fast_fact_attribute(row[4].value)
-        value = row[5].value
+        attr = rename_school_fast_facts_attribute(row[4].value)
+        value = detect_type(row[5].value)
 
-        if "district_1" in attribute or "district_2" in attribute:
+        if attr is None:
+            continue
+        if "lea_1" in attr or "lea_2" in attr:
             continue
 
         if school_id not in schools:
-            schools[school_id] = {"school_name": school_name, "district_name": district_name, "aun": aun}
+            schools[school_id] = {"school_name": school_name, "lea_name": lea_name, "aun": aun}
 
-        schools[school_id][attribute] = detect_type(value)
+        schools[school_id][attr] = value
 
     return SheetDict(schools, "school_id")
 

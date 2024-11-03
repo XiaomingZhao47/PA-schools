@@ -32,7 +32,6 @@ class Logger:
     def warn(self, message):
         print(f' =============== {message} ===============')
         self.log_file.write(f' =============== {message} ===============')
-        self.newline()
 
 def detect_year(str):
     str = str.replace("%20", " ")
@@ -73,6 +72,16 @@ def detect_type(value):
         return value
 
     new_value = value.strip()
+    lower_value = new_value.lower().replace(" ", "")
+
+    if lower_value == "":
+        return None
+    if lower_value == "na":
+        return None
+    if lower_value == "notavailable":
+        return None
+    if lower_value == "null":
+        return None
 
     if new_value.isdigit():
         return int(new_value)

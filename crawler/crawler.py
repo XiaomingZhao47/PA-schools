@@ -81,7 +81,7 @@ run_operation(download_urls, DATA_URLS_FILE, DATA_DIRECTORY, "data downloader", 
 run_operation(reorganize_data, DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, "data organizer", "Not all data has been organized")
 run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned", check_type="SKIP")
 run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized", check_type="REQUIRE")
-run_operation(insert_data, NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, "data inserter", None, check_type="DIR_DB")
+run_operation(insert_data, NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, "data inserter", None, check_type="DIR_DB")#check_type="SKIP")#
 
 logger.unindent()
 logger.write("Done!")
