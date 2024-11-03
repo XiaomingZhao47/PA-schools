@@ -83,7 +83,34 @@ const CityComparison: React.FC = () => {
     };
 
     const getRandomColor = () => {
-        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384'];
+        const colors = [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF',
+            '#FF9F40',
+            '#C9CBCF',
+            '#FF4560',
+            '#00E396',
+            '#775DD0',
+            '#FEB019',
+            '#3F51B5',
+            '#03A9F4',
+            '#4CAF50',
+            '#F9CE1D',
+            '#E91E63',
+            '#FF9800',
+            '#9C27B0',
+            '#2196F3',
+            '#8BC34A',
+            '#FFEB3B',
+            '#795548',
+            '#607D8B',
+            '#FF5722',
+            '#009688',
+        ];
+
         return colors[Math.floor(Math.random() * colors.length)];
     };
 
