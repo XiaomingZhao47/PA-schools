@@ -47,10 +47,14 @@ def detect_year(str):
     return "COULD NOT DETERMINE YEAR!!"
 
 def detect_db_type(col):
-    possible_type = "TEXT"
+    possible_type = "INTEGER"
+
+    test = False
 
     for cellIdx, cell in enumerate(col):
         if cellIdx == 0:
+            if cell.value == "school_enrollment":
+                test = True
             continue
 
         val = cell.value
@@ -58,13 +62,13 @@ def detect_db_type(col):
         if val is None:
             continue
         if isinstance(val, str):
+            if test:
+                print(cellIdx)
+                print(val)
+                exit()
             return "TEXT"
-        if int(val) == val:
-            if val == 0:
-                possible_type = "INTEGER"
-                continue
-            return "INTEGER"
-        return "REAL"
+        if not int(val) == val:
+            possible_type = "REAL"
     return possible_type
 
 def detect_type(value):
@@ -74,7 +78,7 @@ def detect_type(value):
     new_value = value.strip()
     lower_value = new_value.lower().replace(" ", "")
 
-    if lower_value in ["", "na", "notavailable", "notapplicable", "insufficientsample", "is", "null"]:
+    if lower_value in ["", "na", "notavailable", "notapplicable", "insufficientsample", "is", "null", "--"]:
         return None
 
     if new_value.isdigit():
@@ -89,7 +93,6 @@ def detect_type(value):
         return int(new_value[0:3] + new_value[4:7] + new_value[8:12])
 
     return new_value
-
 
 
 def detect_iuid(iu_name):

@@ -104,6 +104,9 @@ def parse_standard_wb(wb, logger):
 
         for col_idx, col in enumerate(sheet.iter_cols()):
             attr = col[0].value
+            if attr is None:
+                continue
+
             col_types[attr] = detect_db_type(col)
 
             if col_idx == 0:
@@ -150,7 +153,12 @@ def parse_ffs_wb(wb, logger):
 
         for col_idx, col in enumerate(sheet.iter_cols()):
             attr = col[0].value
+            if attr is None:
+                continue
+
             col_types[attr] = detect_db_type(col)
+
+        print(col_types)
 
         for row_idx, row in enumerate(sheet.iter_rows()):
             if row_idx == 0:
@@ -169,7 +177,7 @@ def parse_ffs_wb(wb, logger):
 
                 is_lea_attr = attr in ["lea_name", "county", "lea_name", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
                 is_iu_attr = attr in ["iu_name"]
-                is_school_attr = attr in ["school_name", "aun", "school_address_street", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
+                is_school_attr = attr in ["school_name", "aun", "school_address_street", "school_address_city", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
 
                 if is_lea_attr:
                     pass
@@ -182,11 +190,10 @@ def parse_ffs_wb(wb, logger):
                 else:
                     add_to_composite_dict(logger, data_dict, school_id, year, attr, value)
 
-                # This bit of code is absolutely attrocious. It is meant to handle CTCs, which are LEAs but not SDs!
+                # This bit of code is kinda bad. It is meant to handle CTCs, which are LEAs but not SDs
                 school_name = sheet.cell(row=row_idx+1, column=2).value
                 lea_name = sheet.cell(row=row_idx+1, column=3).value
                 if school_name == lea_name and is_school_attr and attr != "aun":
-                    #logger.write("Doing garbage")
                     #logger.write(f'fast fact attr: school_id: {school_id}, year: {year}, attr: {attr}. aun: {aun}')
                     add_to_sheet_dict(logger, leas, aun, attr.replace("school_", "lea_"), value)
 
@@ -273,6 +280,9 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
             logger.write(f'Processing {subdirectory}/{filename}')
             if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename:
                 continue
+
+            #if "Fast_Facts" not in filename:
+            #    continue
 
             file = CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
 

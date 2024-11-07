@@ -96,8 +96,11 @@ def rename_fast_fact_attribute(attribute):
     if "black/african_american" in new_name:
         return "african_american"
 
+    if "english_learner" in new_name:
+        return "english_learner"
+
     if "career_and_technical_center" in new_name:
-        new_name.replace("career_and_technical_center", "ctc")
+        return new_name.replace("career_and_technical_center", "ctc")
 
     if "native_hawaiian_or_other_pacific_islander" in new_name:
         return "nh_pi"
@@ -638,8 +641,10 @@ def parse_cohort(wb, year, fix = False):
             return new_name.replace("multi-racial", "multiracial")
         if "sp_ed_" in new_name:
             return new_name.replace("sp_ed_", "special_ed_")
-        if "ell_" in new_name:
-            return new_name.replace("ell_", "el_")
+        if "ell_" in new_name or "el_" in new_name:
+            return new_name.replace("ell_", "english_learner_").replace("el_", "english_learner_")
+        if "econ_disadv_" in new_name:
+            return new_name.replace("econ_disadv_", "economically_disadvantaged_")
         if new_name == "grades" or new_name == "grads":
             return "total_grads"
         if new_name == "cohort_grad_rate" or new_name == "grad_rate" or new_name == "total_grad_rate": # unecessary because it can be calculated
@@ -739,7 +744,7 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
-        if "Cohort" not in subdirectory:
+        if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid" not in subdirectory and "APD" not in subdirectory and "Cohort" not in subdirectory:
             continue
 
         for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
