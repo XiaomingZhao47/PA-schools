@@ -17,7 +17,7 @@ def run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger):
     logger.unindent()
 
 def get_new_directory(filename, directory, logger):
-    if not directory == "FRPA":
+    if not directory == "FRPA" and not directory == "Cohorts":
         return directory
 
     if "District Fiscal" in filename:
@@ -34,6 +34,15 @@ def get_new_directory(filename, directory, logger):
 
     if "Datafile" in filename:
         return "FRP"
+
+    if "4-Year" in filename:
+        return "Cohort_Four_Year"
+
+    if "5-Year" in filename:
+        return "Cohort_Five_Year"
+
+    if "6-Year" in filename:
+        return "Cohort_Six_Year"
 
     logger.warn("INVALID DIRECTORY")
     return "INVALID"

@@ -74,13 +74,7 @@ def detect_type(value):
     new_value = value.strip()
     lower_value = new_value.lower().replace(" ", "")
 
-    if lower_value == "":
-        return None
-    if lower_value == "na":
-        return None
-    if lower_value == "notavailable":
-        return None
-    if lower_value == "null":
+    if lower_value in ["", "na", "notavailable", "notapplicable", "insufficientsample", "is", "null"]:
         return None
 
     if new_value.isdigit():

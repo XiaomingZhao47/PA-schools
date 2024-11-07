@@ -109,7 +109,7 @@ def parse_standard_wb(wb, logger):
             if col_idx == 0:
                 continue
 
-            is_lea_attr = attr in ["lea_name", "county", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
+            is_lea_attr = attr in ["lea_type", "lea_name", "county", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
             is_iu_attr = attr in ["iu_name"]
             #is_school_attr = attr in ["school_name", "school_address_street", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
 
@@ -119,6 +119,13 @@ def parse_standard_wb(wb, logger):
 
                 aun = sheet.cell(row=row_idx+1, column=1).value
                 value = cell.value
+
+                #if attr == "lea_type":
+                #    print("SDLFJKJSLKDFJLSKDJF")
+                #    exit()
+                if not isinstance(aun, int):
+                    print(year)
+                    exit()
 
                 if is_lea_attr:
                     add_to_sheet_dict(logger, leas, aun, attr, value)
@@ -185,6 +192,9 @@ def parse_ffs_wb(wb, logger):
 
     logger.unindent()
     return (SheetDict(data_dict, "school_id"), col_types)
+
+def parse_cohort_school(wb, logger):
+    pass
 
 def write_composite_dict(sheet_dict, col_types, filename):
     wb = openpyxl.Workbook()
@@ -260,7 +270,7 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
             if "#" in filename:
                 continue
 
-            logger.write(f'Processing {filename}')
+            logger.write(f'Processing {subdirectory}/{filename}')
             if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename:
                 continue
 
@@ -272,6 +282,9 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
 
             if "Fast_Facts_School" in filename:
                 [dict, col_types] = parse_ffs_wb(wb, logger)
+            elif "Cohort_School" in filename:
+                continue
+                [dict, col_types] = parse_cohort_school(wb, logger)
             else:
                 [dict, col_types] = parse_standard_wb(wb, logger)
 

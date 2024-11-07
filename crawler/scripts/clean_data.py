@@ -34,6 +34,34 @@ def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
     logger.unindent()
     logger.write("Done!")
 
+def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
+    parsed_sheet = {}
+
+    first = True
+    for rowIdx, row in enumerate(sheet.rows):
+        if first:
+            first = False
+            continue
+
+        id = detect_type(get_id(row, year))
+        if id is None:
+            continue
+
+        parsed_sheet[id] = {}
+
+        for colIdx, col in enumerate(row):
+
+            attribute = sheet.cell(row=1, column=colIdx+1).value
+            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
+
+            attribute = rename_attr_cb(attribute)
+            if attribute is None:
+                continue
+
+            parsed_sheet[id][attribute] = detect_type(value)
+
+    return parsed_sheet
+
 def rename_attribute(attribute):
     if attribute == None:
         return None
@@ -189,34 +217,6 @@ def parse_school_fast_facts(wb):
         schools[school_id][attr] = value
 
     return SheetDict(schools, "school_id")
-
-def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
-    parsed_sheet = {}
-
-    first = True
-    for rowIdx, row in enumerate(sheet.rows):
-        if first:
-            first = False
-            continue
-
-        id = detect_type(get_id(row, year))
-        if id is None:
-            continue
-
-        parsed_sheet[id] = {}
-
-        for colIdx, col in enumerate(row):
-
-            attribute = sheet.cell(row=1, column=colIdx+1).value
-            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
-
-            attribute = rename_attr_cb(attribute)
-            if attribute is None:
-                continue
-
-            parsed_sheet[id][attribute] = detect_type(value)
-
-    return parsed_sheet
 
 def parse_afr_expenditure(wb, year):
     def get_exp_aun(row, year):
@@ -563,6 +563,136 @@ def parse_aid_ratio(wb, year):
 
     return [lea_dict, iu_dict]
 
+def parse_apd(wb):
+    def rename_apd_attr(attr):
+        new_name = rename_attribute(attr)
+        new_name = new_name.replace("_-_", "_").replace("/", "_").replace(":", "_").replace("-", "_").replace("(", "").replace(")", "")
+
+        return new_name
+
+    schools = {}
+    sheet = wb.active
+
+    first = True
+    for row in sheet.rows:
+        if first:
+            first = False
+            continue
+
+        lea_name = row[0].value
+        school_name = row[1].value
+        aun = detect_type(row[2].value)
+        school_id = detect_type(row[3].value)
+        attr = rename_apd_attr(row[4].value)
+        value = detect_type(row[5].value)
+
+        if attr is None:
+            continue
+
+        if school_id not in schools:
+            schools[school_id] = {"school_name": school_name, "lea_name": lea_name, "aun": aun}
+
+        schools[school_id][attr] = value
+
+    return SheetDict(schools, "school_id")
+
+def parse_cohort(wb, year, fix = False):
+    def get_cohort_lea_aun(row, year):
+        aun = row[1].value
+        if aun == "STATE":
+            return None
+        if aun == "'-  1  -" or aun == "-  1  -": # This only occurance I found of this was Cohort_Five_Year_2014-2015
+            return None
+
+        return aun
+
+    def get_cohort_school_id(row, year):
+        school_id = row[3].value
+        if school_id == "STATE":
+            return None
+
+        return school_id
+
+    def get_cohort_lea_aun_fix(row, year):
+        aun = row[0].value
+        if aun == "State":
+            return None
+
+    def rename_cohort_attr(attr):
+        new_name = rename_attribute(attr)
+
+        if new_name == None:
+            return None
+
+        if "black" in new_name:
+            return new_name.replace("black", "african_american")
+        if "american_indian/alaskan_native" in new_name:
+            return new_name.replace("american_indian/alaskan_native", "ai_an")
+        if "american_indian/_alaskan_native" in new_name:
+            return new_name.replace("american_indian/_alaskan_native", "ai_an")
+        if "aian" in new_name:
+            return new_name.replace("aian", "ai_an")
+        if "native_hawaiian_or_pacific_islander" in new_name:
+            return new_name.replace("native_hawaiian_or_pacific_islander", "nh_pi")
+        if "multi-racial" in new_name:
+            return new_name.replace("multi-racial", "multiracial")
+        if "sp_ed_" in new_name:
+            return new_name.replace("sp_ed_", "special_ed_")
+        if "ell_" in new_name:
+            return new_name.replace("ell_", "el_")
+        if new_name == "grades" or new_name == "grads":
+            return "total_grads"
+        if new_name == "cohort_grad_rate" or new_name == "grad_rate" or new_name == "total_grad_rate": # unecessary because it can be calculated
+            return None
+        if new_name == "lea":
+            return "lea_name"
+        if new_name == "cohort":
+            return "total_cohort"
+        if new_name == "school_number":
+            return "school_id"
+        if new_name == "school":
+            return "school_name"
+
+        return new_name
+
+    def rename_cohort_lea_attr(attr):
+        new_name = rename_cohort_attr(attr)
+
+        if new_name == "aun":
+            return None
+
+        return new_name
+
+    def rename_cohort_lea_attr_fix(attr):
+        new_name = rename_cohort_lea_attr(attr)
+        if new_name == "lea_type":
+            return "aun"
+        if new_name == "aun":
+            return "lea_name"
+        if new_name == "lea":
+            return lea_type
+
+        return new_name
+
+    def rename_cohort_school_attr(attr):
+        new_name = rename_cohort_attr(attr)
+
+        if new_name == "school_id":
+            return None
+
+        return new_name
+
+    if fix: # This is needed because Cohort_Four_Year_2012-2013 misslabled the attributes. This swaps the names/positions so that they match up again
+        cohort_lea_sheet = parse_standard_sheet(trim_sheet(wb.worksheets[2], 2, 1), year, rename_cohort_lea_attr_fix, get_cohort_lea_aun_fix)
+    else:
+        cohort_lea_sheet = parse_standard_sheet(trim_sheet(wb.worksheets[2], 2, 1), year, rename_cohort_lea_attr, get_cohort_lea_aun)
+
+    cohort_sch_sheet = parse_standard_sheet(trim_sheet(wb.worksheets[3], 2, 1), year, rename_cohort_school_attr, get_cohort_school_id)
+
+    cohort_lea_dict = SheetDict(cohort_lea_sheet, "aun")
+    cohort_sch_dict = SheetDict(cohort_sch_sheet, "school_id")
+
+    return [cohort_lea_dict, cohort_sch_dict]
 
 def write_dicts(classified_sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY):
 
@@ -609,7 +739,7 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
-        if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid_Ratios" not in subdirectory:
+        if "Cohort" not in subdirectory:
             continue
 
         for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
@@ -662,6 +792,24 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
                 aid_ratios = parse_aid_ratio(wb, year)
                 sheet_dicts["Aid_Ratios_LEA"][year] = aid_ratios[0]
                 sheet_dicts["Aid_Ratios_IU"][year] = aid_ratios[1]
+
+            elif "APD" in file:
+                if "APD" not in sheet_dicts:
+                    sheet_dicts["APD"] = {}
+
+                sheet_dicts["APD"][year] = parse_apd(wb)
+
+            elif "Cohort" in file:
+                if "Cohort_LEA" not in sheet_dicts:
+                    sheet_dicts["Cohort_LEA"] = {}
+                    sheet_dicts["Cohort_School"] = {}
+
+                fix = "Four" in subdirectory and year == 2012
+
+                cohorts = parse_cohort(wb, year, fix)
+                sheet_dicts["Cohort_LEA"][year] = cohorts[0]
+                sheet_dicts["Cohort_School"][year] = cohorts[1]
+
             else:
                 logger.write(f'No parser for: {file}')
                 wb.close()
@@ -691,6 +839,12 @@ def remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger):
 
     logger.unindent()
     logger.write("Done!")
+
+def trim_sheet(sheet, rows, cols):
+    sheet.delete_rows(1, rows)
+    sheet.delete_cols(1, cols)
+
+    return sheet
 
 def run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     logger.indent()

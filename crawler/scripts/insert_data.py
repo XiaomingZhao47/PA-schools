@@ -105,8 +105,6 @@ def run(NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, logger):
 
     con = sqlite3.connect(DATABASE_FILE)
 
-
-
     reset_table(con, logger)
 
     for filename in os.listdir(NORMALIZED_DATA_DIRECTORY):
