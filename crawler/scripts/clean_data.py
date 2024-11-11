@@ -83,6 +83,7 @@ def rename_fast_fact_attribute(attribute):
 
     new_name = new_name.replace("_-_percent_enrollment_by_student_groups", "").replace("district_", "lea_")
     new_name = new_name.replace("_-_percent_enrollment_by_race/ethnicity", "").replace("district_", "lea")
+    new_name = new_name.replace("(", "").replace(")", "")
 
     if "2_or_more_races" in new_name:
         return new_name.replace("2_or_more_races", "multiracial")
@@ -117,11 +118,11 @@ def rename_fast_fact_attribute(attribute):
     if "geographic_size" in new_name:
         return "district_size"
 
-    if "male_(school)" in new_name:
-        return "male"
-
     if "female_(school)" in new_name:
         return "female"
+
+    if "male_(school)" in new_name:
+        return "male"
 
     if "(street)" in new_name:
         return new_name.replace("(street)", "street")
@@ -209,6 +210,8 @@ def parse_school_fast_facts(wb):
         attr = rename_school_fast_facts_attribute(row[4].value)
         value = detect_type(row[5].value)
 
+
+
         if attr is None:
             continue
         if "lea_1" in attr or "lea_2" in attr:
@@ -279,7 +282,7 @@ def parse_afr_expenditure(wb, year):
             case 2000:
                 return "support_services"
             case 2100:
-                return "personell"
+                return "personnel"
             case 2200:
                 return "staff"
             case 2300:
