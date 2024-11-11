@@ -1,6 +1,8 @@
 crawler/*.txt
 crawler/data/*
 !crawler/data/TeamProject.pdf
+!crawler/README.txt
+!crawler/requirements.txt
 web-framework/server/data.db
 web-framework/server/database.db
 web-framework/node_modules
