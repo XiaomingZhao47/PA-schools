@@ -1,35 +1,40 @@
-# ==== How To Run the crawler: ==== #
+# How To Run the crawler:
 
-1. (Opt.) Set up virtual environment
+## 1. (Opt.) Set up virtual environment
 
-    Depending on your OS, you may have to set up a
-    virtual environment. Here are some common methods:
+Depending on your OS, you may have to set up a
+virtual environment. Here are some common methods:
 
-    Linux:
-        $ python -m venv ./.venv
-        $ source ./.venv/bin/activate
+Linux:
+```
+$ python -m venv ./.venv
+$ source ./.venv/bin/activate
+```
 
-    Other: https://docs.python.org/3/library/venv.html
+Other:  
+&emsp;https://docs.python.org/3/library/venv.html
 
+## 2. Install the required packages
 
+This project requires a few additional dependencies.
+These are listed in requirements.txt.
 
-2. Install the required packages
+To install, run:
+```
+$ pip install -r requirements.txt
+```
 
-    This project requires a few additional dependencies
-    These are listed in requirements.txt.
+If, for some reason, not all dependencies are installed,
+refresh the dependencies list using pipreqs
+```
+$ pip install pipreqs  
+$ pipreqs . --ignore .venv, __pycache__  
+$ pip install -r requirements.txt
+```
 
-    To install, run:
-        $ pip install -r requirements.txt
+## 3. Execute the crawler script
 
-    If, for some reason, not all dependencies are installed,
-    refresh the dependencies list using pipreqs
-        $ pip install pipreqs
-        $ pipreqs . --ignore .venv, __pycache__
-        $ pip install -r requirementsl.txt
-
-
-
-3. Execute the crawler script
-
-    To run execute the script, run:
-        $ python3 crawler.py
+To run execute the script, run:
+```
+$ python3 crawler.py
+```
