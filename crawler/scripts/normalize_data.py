@@ -246,9 +246,9 @@ def parse_keystone_wb(wb, logger):
                 elif is_iu_attr:
                     logger.warn(f'Cannot add to iu dict. Attr: {attr}, Val: {value}')
                 elif is_school_attr and (attr != "aun" or aun is not None):
-                    if aun is None:
-                        print(attr)
-                    add_to_sheet_dict(logger, schools, school_id, attr, value)
+                    #if aun is None:
+                    #    print(attr)
+                    add_to_sheet_dict(logger, schools, int(school_id.split("_")[0]), attr, value)
                 else:
                     add_to_composite_dict(logger, data_dict, school_id, year, attr, value)
 

@@ -35,21 +35,27 @@ def insert_file(start_dir, db, filename, con, logger):
     if len(list(sheet.rows)) < 2:
         return
 
+    # Splits columns up into name / data type
     raw_attrs = tuple(cell.value.split(" ") for cell in list(sheet.rows)[0])
     attrs = []
     pks = []
 
+    if "Keystone" in filename:
+        raw_attrs = (["demographic_group", "PK_TEXT"],) + raw_attrs
+        raw_attrs = (["subject", "PK_TEXT"],) + raw_attrs
+
     for i in range(len(raw_attrs)):
         raw_key = raw_attrs[i]
 
-        if len(raw_key) == 1:
+        if len(raw_key) == 1: # No data type provided
             logger.write(f'{raw_key[0]} does not have a type. Defaulting to TEXT.')
             raw_key = [raw_key[0], "TEXT"]
         elif len(raw_key) == 2:
             pass
-        else:
+        else: # Atribute is malformatted
             logger.warn(f'Invalid key: {raw_key}')
             continue
+
         key_name = raw_key[0]
         key_type = raw_key[1]
 
@@ -62,17 +68,19 @@ def insert_file(start_dir, db, filename, con, logger):
 
     create_query = f'CREATE TABLE IF NOT EXISTS {table_name} ('
 
-    if len(pks) == 0:
+    if len(pks) == 0: # No Primary Keys Specified
         pks = [attrs[0].name]
         logger.warn(f'PKs are empty. Defaulting to ${pks[0]}')
 
-    for key in attrs:
+    for key in attrs: # Specify the PKs when creating the table
         create_query = create_query + "\n  " + key.name + " " + key.type + ","
 
     create_query = create_query + "\n\n  PRIMARY KEY ("
     for pk in pks:
         create_query = create_query + pk + ","
     create_query = create_query[0:-1] + ")\n);"
+
+    #print(create_query)
 
 
     insert_query = f'INSERT INTO {table_name} VALUES ('
@@ -84,7 +92,19 @@ def insert_file(start_dir, db, filename, con, logger):
         if(rowIdx == 0):
             continue
 
-        data.append(tuple(cell.value for cell in row))
+        data_tuple = tuple(cell.value for cell in row)
+
+        if "Keystone" in filename:
+            key = data_tuple[0]
+            key_components = key.split("_")
+
+            school_id = key_components[0]
+            group = key_components[1]
+            subject = key_components[2]
+
+            data_tuple = (subject, group, school_id) + data_tuple[1:]
+
+        data.append(data_tuple)
 
     try:
         cur.execute(create_query)

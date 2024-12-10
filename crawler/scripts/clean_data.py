@@ -642,17 +642,22 @@ def parse_keystone(wb, year):
 
     schools = {}
     for row_idx, row in enumerate(keystone_sheet.rows):
-        school_id = row[school_id_idx].value
-
+        school_id = detect_type(row[school_id_idx].value)
+        group = rename_keystone_attr(row[group_idx].value)
+        subject = rename_keystone_attr(row[subject_idx].value)
 
         if row_idx == 0:
             continue
-        if school_id not in schools:
-            schools[school_id] = {}
-        if school_id is None:
+        if school_id is None or group is None or subject is None:
+            print(f'Invalid enrtry. ID: {school_id}, Group: {group}, Subject: {subject}')
             continue
         if detect_type(row[attr_idxs["grade"]].value) != 11:
             continue
+
+        composite_key = str(school_id) + "_" + group + "_" + subject
+
+        if composite_key not in schools:
+            schools[composite_key] = {}
 
         for col_idx, cell in enumerate(row):
             attr = rename_keystone_attr(keystone_sheet.cell(row=1, column=col_idx+1).value)
@@ -665,17 +670,7 @@ def parse_keystone(wb, year):
             if col_idx in [school_id_idx, subject_idx, group_idx]:
                 continue
 
-            if col_idx in rating_idxs:
-                group = rename_keystone_attr(keystone_sheet.cell(row=row_idx+1, column=group_idx+1).value)
-                subject = rename_keystone_attr(keystone_sheet.cell(row=row_idx+1, column=subject_idx+1).value)
-
-                #print(f'Row {row_idx+1}: ({group}, {subject}, {attr})')
-
-                if group is not None and subject is not None:
-                    attr = group + "_" + subject + "_" + attr
-                    #print(attr)
-
-            schools[school_id][attr] = value
+            schools[composite_key][attr] = value
 
     #print(schools)
     return SheetDict(schools, "school_id")
