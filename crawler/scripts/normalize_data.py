@@ -38,13 +38,14 @@ def can_safely_replace(val1, val2):
 
 
 def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
-    dict = sheet_dict.dict
-
-    if id not in dict:
-        dict[id] = {}
-
+    if id is None:
+        return
     if value is None:
         return
+
+    dict = sheet_dict.dict
+    if id not in dict:
+        dict[id] = {}
 
     if attribute in dict[id]:
         old_val = dict[id][attribute]
@@ -54,14 +55,15 @@ def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
     dict[id][attribute] = value
 
 def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
-    if year not in composite_dict:
-        composite_dict[year] = {}
-
-    if id not in composite_dict[year]:
-        composite_dict[year][id] = {}
-
     if value is None:
         return
+    if id is None:
+        return
+
+    if year not in composite_dict:
+        composite_dict[year] = {}
+    if id not in composite_dict[year]:
+        composite_dict[year][id] = {}
 
     if attribute in composite_dict[year][id]:
         old_val = composite_dict[year][id][attribute]
@@ -158,17 +160,17 @@ def parse_ffs_wb(wb, logger):
 
             col_types[attr] = detect_db_type(col)
 
-        print(col_types)
+        #print(col_types)
 
         for row_idx, row in enumerate(sheet.iter_rows()):
             if row_idx == 0:
                 continue
 
             for col_idx, cell in enumerate(row):
-                attr = sheet.cell(row=1, column=col_idx+1).value
-                school_id = sheet.cell(row=row_idx+1, column=1).value
-                aun = sheet.cell(row=row_idx+1, column=4).value
-                value = cell.value
+                attr = detect_type(sheet.cell(row=1, column=col_idx+1).value)
+                school_id = detect_type(sheet.cell(row=row_idx+1, column=1).value)
+                aun = detect_type(sheet.cell(row=row_idx+1, column=4).value)
+                value = detect_type(cell.value)
 
                 if attr is None:
                     continue
@@ -186,6 +188,66 @@ def parse_ffs_wb(wb, logger):
                 elif is_iu_attr:
                     logger.warn(f'Cannot add to iu dict. Attr: {attr}, Val: {value}')
                 elif is_school_attr:
+                    add_to_sheet_dict(logger, schools, school_id, attr, value)
+                else:
+                    add_to_composite_dict(logger, data_dict, school_id, year, attr, value)
+
+                # This bit of code is kinda bad. It is meant to handle CTCs, which are LEAs but not SDs
+                school_name = sheet.cell(row=row_idx+1, column=2).value
+                lea_name = sheet.cell(row=row_idx+1, column=3).value
+                if school_name == lea_name and is_school_attr and attr != "aun":
+                    #logger.write(f'fast fact attr: school_id: {school_id}, year: {year}, attr: {attr}. aun: {aun}')
+                    add_to_sheet_dict(logger, leas, aun, attr.replace("school_", "lea_"), value)
+
+    logger.unindent()
+    return (SheetDict(data_dict, "school_id"), col_types)
+
+def parse_keystone_wb(wb, logger):
+    data_dict = {}
+    col_types = {}
+
+    logger.indent()
+
+    for sheet in wb.worksheets:
+        year = detect_type(sheet.title)
+
+        for col_idx, col in enumerate(sheet.iter_cols()):
+            attr = col[0].value
+            if attr is None:
+                continue
+
+            col_types[attr] = detect_db_type(col)
+
+        #print(col_types)
+
+        for row_idx, row in enumerate(sheet.iter_rows()):
+            if row_idx == 0:
+                continue
+
+            for col_idx, cell in enumerate(row):
+                attr = detect_type(sheet.cell(row=1, column=col_idx+1).value)
+                school_id = detect_type(sheet.cell(row=row_idx+1, column=1).value)
+                aun = detect_type(sheet.cell(row=row_idx+1, column=29).value)
+                value = detect_type(cell.value)
+
+                if attr is None:
+                    continue
+                if attr == "school_id":
+                    continue
+
+                is_lea_attr = attr in ["lea_name", "county", "lea_name", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
+                is_iu_attr = attr in ["iu_name"]
+                is_school_attr = attr in ["school_name", "aun", "school_address_street", "school_address_city", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
+
+                if is_lea_attr:
+                    pass
+                    #add_to_sheet_dict(logger, leas, aun, attr, value)
+                    #logger.warn(f'Cannot add to lea dict. Attr: {attr}, Val: {value}')
+                elif is_iu_attr:
+                    logger.warn(f'Cannot add to iu dict. Attr: {attr}, Val: {value}')
+                elif is_school_attr and (attr != "aun" or aun is not None):
+                    if aun is None:
+                        print(attr)
                     add_to_sheet_dict(logger, schools, school_id, attr, value)
                 else:
                     add_to_composite_dict(logger, data_dict, school_id, year, attr, value)
@@ -278,11 +340,12 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
                 continue
 
             logger.write(f'Processing {subdirectory}/{filename}')
-            if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename:
-                continue
-
-            #if "Fast_Facts" not in filename:
+            #if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename and "Keystone" not in filename:
             #    continue
+            #if "Keystone" not in filename:
+            #    continue
+            if "APD" in filename:
+                continue
 
             file = CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
 
@@ -293,8 +356,10 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
             if "Fast_Facts_School" in filename:
                 [dict, col_types] = parse_ffs_wb(wb, logger)
             elif "Cohort_School" in filename:
-                continue
-                [dict, col_types] = parse_cohort_school(wb, logger)
+                pass
+                #[dict, col_types] = parse_cohort_school(wb, logger)
+            elif "Keystone" in filename:
+                [dict, col_types] = parse_keystone_wb(wb, logger)
             else:
                 [dict, col_types] = parse_standard_wb(wb, logger)
 
@@ -311,9 +376,6 @@ def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
     write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
     write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/LEAs.xlsx")
     write_sheet_dict(ius, NORMALIZED_DATA_DIRECTORY + "/IUs.xlsx")
-
-
-
 
     logger.unindent()
 

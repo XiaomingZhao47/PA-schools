@@ -37,8 +37,13 @@ def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
 def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
     parsed_sheet = {}
 
+    #print(sheet)
+    #print(enumerate(sheet.rows))
+
     first = True
-    for rowIdx, row in enumerate(sheet.rows):
+    for row_idx, row in enumerate(sheet.rows):
+        #print("HERE!")
+
         if first:
             first = False
             continue
@@ -48,17 +53,13 @@ def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
             continue
 
         parsed_sheet[id] = {}
+        for col_idx, cell in enumerate(row):
 
-        for colIdx, col in enumerate(row):
+            attribute = rename_attr_cb(sheet.cell(row=1, column=col_idx+1).value)
+            value = detect_type(sheet.cell(row=row_idx+1, column=col_idx+1).value)
 
-            attribute = sheet.cell(row=1, column=colIdx+1).value
-            value = sheet.cell(row=rowIdx+1, column=colIdx+1).value
-
-            attribute = rename_attr_cb(attribute)
-            if attribute is None:
-                continue
-
-            parsed_sheet[id][attribute] = detect_type(value)
+            if attribute is not None:
+                parsed_sheet[id][attribute] = (value)
 
     return parsed_sheet
 
@@ -73,8 +74,12 @@ def rename_attribute(attribute):
     new_name = new_name.replace("&", "and")
     new_name = new_name.replace("district_name", "lea_name")
 
-    if new_name == "school_district":
+    if new_name == "school_district" or new_name == "district" :
         return "lea_name"
+    if new_name == "schl" or new_name == "school_number":
+        return "school_id"
+    if new_name == "school":
+        return "school_name"
 
     return new_name
 
@@ -211,7 +216,6 @@ def parse_school_fast_facts(wb):
         value = detect_type(row[5].value)
 
 
-
         if attr is None:
             continue
         if "lea_1" in attr or "lea_2" in attr:
@@ -223,6 +227,8 @@ def parse_school_fast_facts(wb):
         schools[school_id][attr] = value
 
     return SheetDict(schools, "school_id")
+
+
 
 def parse_afr_expenditure(wb, year):
     def get_exp_aun(row, year):
@@ -569,6 +575,112 @@ def parse_aid_ratio(wb, year):
 
     return [lea_dict, iu_dict]
 
+def parse_keystone(wb, year):
+    def get_keystone_school_id(row, year):
+        if year == 2015:
+            return row[0].value
+        if year in [2017, 2018]:
+            return row[1].value
+        if year in [2016, 2019, 2021, 2022]:
+            return row[2].value
+        return row[2].value
+
+    def rename_keystone_attr(attr):
+        new_name = rename_attribute(attr)
+        if new_name is None:
+            return None
+        if new_name == "year":
+            return None
+        if new_name == "growth":
+            return None
+        if "2019" in new_name:
+            return None
+        if "below" in new_name:
+            return "below_basic"
+        if "basic" in new_name:
+            return "basic"
+        if "proficient" in new_name:
+            return "proficient"
+        if "advanced" in new_name:
+            return "advanced"
+        if new_name == "all_students":
+            return "all"
+        if new_name == "economically_disadvantaged":
+            return "ed"
+        if new_name == "historically_underperforming":
+            return "hu"
+        if new_name == "student_group_name":
+            return "group"
+        if new_name == "n_scored" or new_name == "number_scored":
+            return "scored"
+        if new_name == "m" or new_name == "algebra_i" or new_name == "algebra_1":
+            return "algebra"
+        if new_name == "e":
+            return "literature"
+        if new_name == "s":
+            return "biology"
+
+        return new_name
+
+    if year == 2015:
+        keystone_sheet = trim_sheet(wb.worksheets[0], 7, 0)
+    elif year == 2021:
+        keystone_sheet = trim_sheet(wb.worksheets[0], 5, 0)
+    else:
+        keystone_sheet = trim_sheet(wb.worksheets[0], 4, 0)
+
+    attr_idxs = {}
+    for col_idx, cell in enumerate(next(keystone_sheet.rows)):
+        attr = rename_keystone_attr(cell.value)
+        if attr is not None:
+            attr_idxs[attr] = col_idx
+
+    school_id_idx = attr_idxs["school_id"]
+    subject_idx = attr_idxs["subject"]
+    group_idx = attr_idxs["group"]
+    rating_idxs = [attr_idxs["advanced"], attr_idxs["proficient"], attr_idxs["basic"], attr_idxs["below_basic"]]
+
+    schools = {}
+    for row_idx, row in enumerate(keystone_sheet.rows):
+        school_id = row[school_id_idx].value
+
+
+        if row_idx == 0:
+            continue
+        if school_id not in schools:
+            schools[school_id] = {}
+        if school_id is None:
+            continue
+        if detect_type(row[attr_idxs["grade"]].value) != 11:
+            continue
+
+        for col_idx, cell in enumerate(row):
+            attr = rename_keystone_attr(keystone_sheet.cell(row=1, column=col_idx+1).value)
+            value = detect_type(cell.value)
+
+            if attr is None:
+                continue
+            if attr == "grade":
+                continue
+            if col_idx in [school_id_idx, subject_idx, group_idx]:
+                continue
+
+            if col_idx in rating_idxs:
+                group = rename_keystone_attr(keystone_sheet.cell(row=row_idx+1, column=group_idx+1).value)
+                subject = rename_keystone_attr(keystone_sheet.cell(row=row_idx+1, column=subject_idx+1).value)
+
+                #print(f'Row {row_idx+1}: ({group}, {subject}, {attr})')
+
+                if group is not None and subject is not None:
+                    attr = group + "_" + subject + "_" + attr
+                    #print(attr)
+
+            schools[school_id][attr] = value
+
+    #print(schools)
+    return SheetDict(schools, "school_id")
+
+
 def parse_apd(wb):
     def rename_apd_attr(attr):
         new_name = rename_attribute(attr)
@@ -747,7 +859,8 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
-        if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid" not in subdirectory and "APD" not in subdirectory and "Cohort" not in subdirectory:
+        #if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid" not in subdirectory and "APD" not in subdirectory and "Cohort" not in subdirectory:
+        if "Keystones" not in subdirectory:
             continue
 
         for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
@@ -817,7 +930,11 @@ def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
                 cohorts = parse_cohort(wb, year, fix)
                 sheet_dicts["Cohort_LEA"][year] = cohorts[0]
                 sheet_dicts["Cohort_School"][year] = cohorts[1]
+            elif "Keystone_Exams_School" in file:
+                if "Keystone_Exams" not in sheet_dicts:
+                    sheet_dicts["Keystone_Exams"] = {}
 
+                sheet_dicts["Keystone_Exams"][year] = parse_keystone(wb, year)
             else:
                 logger.write(f'No parser for: {file}')
                 wb.close()
@@ -848,9 +965,12 @@ def remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger):
     logger.unindent()
     logger.write("Done!")
 
-def trim_sheet(sheet, rows, cols):
-    sheet.delete_rows(1, rows)
-    sheet.delete_cols(1, cols)
+def trim_sheet(sheet, rows, cols=0):
+    if rows != 0:
+        sheet.delete_rows(1, rows)
+
+    if cols != 0:
+        sheet.delete_cols(1, cols)
 
     return sheet
 
