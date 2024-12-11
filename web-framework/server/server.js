@@ -186,6 +186,59 @@ app.get('/api/district-programs', (req, res) => {
     });
 });
 
+// 6. home page search
+app.get('/api/schools/search', (req, res) => {
+    const searchTerm = req.query.term;
+    const query = `
+    SELECT DISTINCT
+        s.school_id,
+        s.school_name,
+        s.school_address_city as city,
+        s.school_website,
+        l.lea_name as district_name,
+        l.county,
+        f.school_enrollment as enrollment,
+        f.grades_offered,
+        f.title_i_school,
+        f.economically_disadvantaged,
+        f.english_learner,
+        f.special_education,
+        f.essa_school_designation
+    FROM Schools s
+    JOIN LEAs l ON s.aun = l.aun
+    LEFT JOIN FastFactsSchool f ON s.school_id = f.school_id
+    WHERE (
+        LOWER(s.school_name) LIKE LOWER(?) OR
+        LOWER(l.lea_name) LIKE LOWER(?) OR
+        LOWER(s.school_address_city) LIKE LOWER(?) OR
+        LOWER(l.county) LIKE LOWER(?)
+    )
+    AND f.year = (
+        SELECT MAX(year) 
+        FROM FastFactsSchool
+    )
+    ORDER BY 
+        CASE 
+            WHEN LOWER(s.school_name) LIKE LOWER(?) THEN 1
+            WHEN LOWER(l.lea_name) LIKE LOWER(?) THEN 2
+            ELSE 3
+        END,
+        s.school_name
+    LIMIT 50
+    `;
+
+    const searchPattern = `%${searchTerm}%`;
+    const params = Array(6).fill(searchPattern);
+
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
