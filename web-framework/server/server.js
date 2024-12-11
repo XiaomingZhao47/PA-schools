@@ -8,7 +8,7 @@ const port = 5001;
 
 app.use(cors());
 
-const dbPath = 'schools_facts.db';
+const dbPath = 'database2.db';
 
 // connect to database
 const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, (err) => {
