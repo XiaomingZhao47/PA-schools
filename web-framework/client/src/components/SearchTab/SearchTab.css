@@ -1,0 +1,300 @@
+:root {
+    --search-primary: #1e3a8a;
+    --search-secondary: #2563eb;
+    --search-text: #374151;
+    --search-border: #e5e7eb;
+    --search-hover: #f3f4f6;
+    --search-accent: #3b82f6;
+    --search-yellow: #fcd34d;
+}
+
+/* Search Container */
+.search-container {
+    max-width: 1500px;
+    width: 95%;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    /*display: flex;*/
+    align-items: center;
+
+}
+
+.search-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.search-header h1 {
+    font-size: 2rem;
+    color: var(--search-primary);
+    margin-bottom: 0.5rem;
+}
+
+.search-header p {
+    color: var(--search-text);
+    opacity: 0.8;
+}
+
+/* Search Tabs */
+.search-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.search-tab {
+    padding: 0.75rem 1.25rem;
+    background-color: #f1f5f9;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.search-tab.active {
+    background-color: var(--search-yellow);
+    color: var(--search-primary);
+}
+
+/* Search Box */
+.search-box {
+    display: flex;
+    margin: 0 auto 1.5rem;
+    max-width: 900px;
+    border: 1px solid var(--search-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    outline: none;
+}
+
+.search-button {
+    padding: 0 1.5rem;
+    background: var(--search-primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-button:hover {
+    background: var(--search-secondary);
+}
+
+/* Results Table */
+.search-results {
+    margin: 1rem auto;
+    border-radius: 0.5rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 95%;
+    max-width: 1500px;
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+
+}
+
+.search-table-container {
+    overflow-x: auto;
+    width: 100%;
+    margin: 0;
+    flex: 1;
+    /*padding: 0 2rem;*/
+}
+
+/* Table Styles */
+.search-results table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: separate;
+    border-spacing: 0;
+    height: 100%;
+}
+
+/* Column width specifications */
+.search-results th,
+.search-results td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    height: 24px;
+}
+
+.search-results th:nth-child(1),
+.search-results td:nth-child(1) {
+    width: 12%; /* School name */
+}
+
+.search-results th:nth-child(2),
+.search-results td:nth-child(2) {
+    width: 12%; /* District */
+}
+
+.search-results th:nth-child(3),
+.search-results td:nth-child(3) {
+    width: 5%; /* City */
+}
+
+.search-results th:nth-child(4),
+.search-results td:nth-child(4) {
+    width: 5%; /* County */
+}
+
+.search-results th:nth-child(5),
+.search-results td:nth-child(5) {
+    width: 5%; /* Grades */
+}
+
+.search-results th:nth-child(6),
+.search-results td:nth-child(6) {
+    width: 5%; /* Enrollment */
+    text-align: right;
+}
+
+.search-results th:nth-child(7),
+.search-results td:nth-child(7) {
+    width: 8%; /* Compare */
+    text-align: center;
+}
+
+.search-results th {
+    background: var(--search-primary);
+    color: white;
+    font-weight: 500;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.search-results tr:hover td {
+    background-color: var(--search-hover);
+}
+
+.search-results td {
+    border-bottom: 1px solid var(--search-border);
+}
+
+/* Pagination */
+.search-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-top: 1px solid var(--search-border);
+}
+
+.search-pagination-button {
+    padding: 0.5rem 1rem;
+    background: var(--search-primary);
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-pagination-button:disabled {
+    background: var(--search-border);
+    cursor: not-allowed;
+}
+
+.search-pagination-button:not(:disabled):hover {
+    background: var(--search-secondary);
+}
+
+/* Loading State */
+.search-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.search-spinner {
+    border: 3px solid var(--search-border);
+    border-top: 3px solid var(--search-primary);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1024px) {
+    .search-container {
+        width: 98%;
+        padding: 0 0.5rem;
+    }
+
+    .search-results {
+        width: 98%;
+    }
+
+    .search-tab {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .search-container {
+        width: 100%;
+        padding: 0;
+    }
+
+    .search-results {
+        width: 100%;
+        border-radius: 0;
+    }
+
+    .search-tabs {
+        padding: 0 0.5rem;
+    }
+
+    .search-box {
+        margin: 0 0.5rem 1.5rem;
+    }
+
+    .search-tab {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+    }
+
+    .search-pagination-button {
+        min-width: 80px;
+        padding: 0.5rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .search-tab {
+        min-width: 100px;
+        padding: 0.5rem;
+    }
+
+    .search-results th,
+    .search-results td {
+        padding: 0.5rem;
+    }
+}
