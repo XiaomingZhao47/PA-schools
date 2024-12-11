@@ -94,7 +94,7 @@ const SearchTab: React.FC = () => {
             <div className="search-box">
                 <input
                     type="text"
-                    placeholder={`Search by ${activeTab}...`}
+                    placeholder={`Search for Schools by Name, District, City, or County...`}
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="search-input"
