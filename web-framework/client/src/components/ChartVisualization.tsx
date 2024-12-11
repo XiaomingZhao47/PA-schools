@@ -1,4 +1,5 @@
 import React from 'react';
+import { DemographicData, School } from '../types';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import {
     Chart,
@@ -16,7 +17,7 @@ import {
     ChartDataset, TooltipItem
 } from 'chart.js';
 
-// Register chart components
+// register chart components
 Chart.register(
     CategoryScale,
     LinearScale,
@@ -29,31 +30,21 @@ Chart.register(
     PointElement
 );
 
-interface DemographicData {
-    school_name: string;
-    american_indian: number;
-    asian: number;
-    native_hawaiian: number;
-    black: number;
-    hispanic: number;
-    white: number;
-    two_or_more_races: number;
-    economically_disadvantaged: number;
-    english_learner: number;
-    special_education: number;
-    female: number;
-    male: number;
-    year: number;
-}
-
 type LineDataset = ChartDataset<'line', number[]>;
 
 interface ChartVisualizationProps {
     demographicData: DemographicData[];
+    selectedSchools: School[];
+    onRemoveSchool: (schoolId: number) => void;
     isLoading?: boolean;
 }
 
-const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData, isLoading = false }) => {
+const ChartVisualization: React.FC<ChartVisualizationProps> = ({
+                                                                   demographicData,
+                                                                   selectedSchools,
+                                                                   onRemoveSchool,
+                                                                   isLoading = false
+                                                               }) => {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-96">
@@ -62,7 +53,13 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
         );
     }
 
-    if (!demographicData?.length) {
+    // Filter demographic data to only show selected schools
+    const filteredDemographicData = selectedSchools.length > 0
+        ? demographicData.filter(d =>
+            selectedSchools.some(s => s.Name.toLowerCase() === d.school_name.toLowerCase()))
+        : demographicData;
+
+    if (!filteredDemographicData?.length) {
         return (
             <div className="flex justify-center items-center h-96">
                 <div className="text-lg text-gray-600">No demographic data available</div>
@@ -70,55 +67,43 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
         );
     }
 
-    const top100Schools = [...demographicData]
-        .sort((a, b) => {
-            const totalA = a.american_indian + a.asian + a.native_hawaiian + a.black +
-                a.hispanic + a.white + a.two_or_more_races;
-            const totalB = b.american_indian + b.asian + b.native_hawaiian + b.black +
-                b.hispanic + b.white + b.two_or_more_races;
-            return totalB - totalA;
-        })
-        .slice(0, 100);
-
-    const schoolNames = top100Schools.map(d => d.school_name);
-
     // get data for racial demographics
     const racialBarData: ChartData<'bar'> = {
-        labels: schoolNames,
+        labels: filteredDemographicData.map(d => d.school_name),
         datasets: [
             {
                 label: 'American Indian',
-                data: top100Schools.map(d => d.american_indian || 0),
+                data: filteredDemographicData.map(d => d.american_indian || 0),
                 backgroundColor: 'rgba(255, 99, 132, 0.6)',
             },
             {
                 label: 'Asian',
-                data: top100Schools.map(d => d.asian || 0),
+                data: filteredDemographicData.map(d => d.asian || 0),
                 backgroundColor: 'rgba(54, 162, 235, 0.6)',
             },
             {
                 label: 'Native Hawaiian',
-                data: top100Schools.map(d => d.native_hawaiian || 0),
+                data: filteredDemographicData.map(d => d.native_hawaiian || 0),
                 backgroundColor: 'rgba(75, 192, 192, 0.6)',
             },
             {
                 label: 'Black',
-                data: top100Schools.map(d => d.black || 0),
+                data: filteredDemographicData.map(d => d.black || 0),
                 backgroundColor: 'rgba(255, 206, 86, 0.6)',
             },
             {
                 label: 'Hispanic',
-                data: top100Schools.map(d => d.hispanic || 0),
+                data: filteredDemographicData.map(d => d.hispanic || 0),
                 backgroundColor: 'rgba(153, 102, 255, 0.6)',
             },
             {
                 label: 'White',
-                data: top100Schools.map(d => d.white || 0),
+                data: filteredDemographicData.map(d => d.white || 0),
                 backgroundColor: 'rgba(255, 159, 64, 0.6)',
             },
             {
                 label: 'Two or More Races',
-                data: top100Schools.map(d => d.two_or_more_races || 0),
+                data: filteredDemographicData.map(d => d.two_or_more_races || 0),
                 backgroundColor: 'rgba(200, 100, 200, 0.6)',
             },
         ],
@@ -127,12 +112,12 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
 
     // get data for other demographics
     const otherDemographicsData: ChartData<'line'> = {
-        labels: schoolNames,
+        labels: filteredDemographicData.map(d => d.school_name),
         datasets: [
             {
                 type: 'line',
                 label: 'Economically Disadvantaged',
-                data: top100Schools.map(d => d.economically_disadvantaged || 0),
+                data: filteredDemographicData.map(d => d.economically_disadvantaged || 0),
                 borderColor: 'rgba(255, 99, 132, 1)',
                 backgroundColor: 'rgba(255, 99, 132, 0.1)',
                 tension: 0.1,
@@ -141,7 +126,7 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
             {
                 type: 'line',
                 label: 'English Learners',
-                data: top100Schools.map(d => d.english_learner || 0),
+                data: filteredDemographicData.map(d => d.english_learner || 0),
                 borderColor: 'rgba(54, 162, 235, 1)',
                 backgroundColor: 'rgba(54, 162, 235, 0.1)',
                 tension: 0.1,
@@ -150,7 +135,7 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
             {
                 type: 'line',
                 label: 'Special Education',
-                data: top100Schools.map(d => d.special_education || 0),
+                data: filteredDemographicData.map(d => d.special_education || 0),
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.1)',
                 tension: 0.1,
@@ -160,8 +145,8 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
     };
 
     // get gender data
-    const totalFemale = top100Schools.reduce((sum, school) => sum + (school.female || 0), 0);
-    const totalMale = top100Schools.reduce((sum, school) => sum + (school.male || 0), 0);
+    const totalFemale = filteredDemographicData.reduce((sum, school) => sum + (school.female || 0), 0);
+    const totalMale = filteredDemographicData.reduce((sum, school) => sum + (school.male || 0), 0);
 
     const genderPieData: ChartData<'pie'> = {
         labels: ['Female', 'Male'],
@@ -251,25 +236,40 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({ demographicData
 
     return (
         <div className="p-4">
+
+            <div className="selected-schools mb-4">
+                {selectedSchools.map(school => (
+                    <div key={school.id} className="inline-flex items-center bg-gray-100 rounded-full px-4 py-2 m-1">
+                        <span className="mr-2">{school.Name}</span>
+                        <button
+                            onClick={() => onRemoveSchool(school.id)}
+                            className="text-red-500 hover:text-red-700"
+                        >
+                            ×
+                        </button>
+                    </div>
+                ))}
+            </div>
+
             <div className="grid grid-cols-1 gap-8">
                 <div className="bg-white rounded-lg shadow-lg p-6">
                     <h3 className="text-lg font-semibold mb-4">Racial Demographics by School</h3>
                     <div className="h-[400px]">
-                        <Bar data={racialBarData} options={barOptions} />
+                        <Bar data={racialBarData} options={barOptions}/>
                     </div>
                 </div>
 
                 <div className="bg-white rounded-lg shadow-lg p-6">
                     <h3 className="text-lg font-semibold mb-4">Other Demographics by School</h3>
                     <div className="h-[400px]">
-                        <Line data={otherDemographicsData} options={lineOptions} />
+                        <Line data={otherDemographicsData} options={lineOptions}/>
                     </div>
                 </div>
 
                 <div className="bg-white rounded-lg shadow-lg p-6">
                     <h3 className="text-lg font-semibold mb-4">Overall Gender Distribution</h3>
                     <div className="h-[400px]">
-                        <Pie data={genderPieData} options={pieOptions} />
+                        <Pie data={genderPieData} options={pieOptions}/>
                     </div>
                 </div>
             </div>

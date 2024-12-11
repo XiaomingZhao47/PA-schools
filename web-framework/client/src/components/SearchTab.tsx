@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import './SearchTab.css';
+import '../styles/SearchTab.css';
 
 interface SearchSchool {
     school_id: number;
@@ -17,15 +16,19 @@ interface SearchSchool {
     special_education: number;
 }
 
+interface SearchTabProps {
+    onSchoolSelect: (school: SearchSchool) => void;
+    selectedSchools: SearchSchool[];
+}
+
 const ITEMS_PER_PAGE = 10;
 
-const SearchTab: React.FC = () => {
+const SearchTab: React.FC<SearchTabProps> = ({ onSchoolSelect, selectedSchools }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<SearchSchool[]>([]);
     const [activeTab, setActiveTab] = useState('school');
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const navigate = useNavigate();
 
     const handleSearch = async (term: string, sortBy: string = activeTab) => {
         setSearchTerm(term);
@@ -55,6 +58,10 @@ const SearchTab: React.FC = () => {
         if (searchTerm.length >= 2) {
             handleSearch(searchTerm, tabId);
         }
+    };
+
+    const isSchoolSelected = (schoolId: number) => {
+        return selectedSchools.some(school => school.school_id === schoolId);
     };
 
     const tabs = [
@@ -137,7 +144,8 @@ const SearchTab: React.FC = () => {
                                         <input
                                             type="checkbox"
                                             className="search-checkbox"
-                                            onChange={() => navigate(`/compare?school=${encodeURIComponent(school.school_name)}`)}
+                                            checked={isSchoolSelected(school.school_id)}
+                                            onChange={() => onSchoolSelect(school)}
                                         />
                                     </td>
                                 </tr>

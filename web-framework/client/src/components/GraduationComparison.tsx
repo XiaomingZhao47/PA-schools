@@ -1,5 +1,5 @@
-import React from 'react';
-import { GraduationData } from '../types';
+import React, { useEffect, useState } from 'react';
+import { School, GraduationData } from '../types';
 import {
     BarChart,
     Bar,
@@ -15,75 +15,112 @@ import {
     PolarRadiusAxis,
     Radar
 } from 'recharts';
+import axios from 'axios';
 import '../styles/GraduationAnalysis.css';
 
 interface Props {
-    selectedSchools: GraduationData[];
-    onRemoveSchool: (school: GraduationData) => void;
+    selectedSchools: School[];
+    onRemoveSchool: (schoolId: number) => void;
 }
 
 const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool }) => {
-    // Helper function to format percentage numbers
+    const [graduationData, setGraduationData] = useState<Map<string, GraduationData>>(new Map());
+
+    useEffect(() => {
+        const fetchGraduationData = async () => {
+            const newGraduationData = new Map<string, GraduationData>();
+
+            for (const school of selectedSchools) {
+                try {
+                    const response = await axios.get(
+                        `http://localhost:5001/api/graduation-rates/${school.DistrictName}`
+                    );
+                    newGraduationData.set(school.DistrictName, response.data);
+                } catch (error) {
+                    console.error(`Error fetching graduation data for ${school.Name}:`, error);
+                }
+            }
+
+            setGraduationData(newGraduationData);
+        };
+
+        fetchGraduationData();
+    }, [selectedSchools]);
+
     const formatPercentage = (value: number): string => {
         return value ? `${Number(value).toFixed(1)}%` : '0%';
     };
 
-    const formatData = (schools: GraduationData[]) => {
-        return schools.map(school => ({
-            name: school.district_name,
-            '4 Year Rate': Number((school.four_year_grads / school.four_year_cohort * 100) || 0),
-            '5 Year Rate': Number((school.five_year_grads / school.five_year_cohort * 100) || 0),
-            '6 Year Rate': Number((school.six_year_grads / school.six_year_cohort * 100) || 0),
-        }));
+    const formatData = () => {
+        return selectedSchools
+            .filter(school => graduationData.has(school.DistrictName))
+            .map(school => {
+                const data = graduationData.get(school.DistrictName)!;
+                return {
+                    name: school.Name,
+                    '4 Year Rate': Number((data.four_year_grads / data.four_year_cohort * 100) || 0),
+                    '5 Year Rate': Number((data.five_year_grads / data.five_year_cohort * 100) || 0),
+                    '6 Year Rate': Number((data.six_year_grads / data.six_year_cohort * 100) || 0),
+                };
+            });
     };
 
-    const formatDemographicData = (schools: GraduationData[]) => {
-        return schools.map(school => ({
-            name: school.district_name,
-            'White': Number(school.four_year_white_rate || 0),
-            'Black': Number(school.four_year_black_rate || 0),
-            'Hispanic': Number(school.four_year_hispanic_rate || 0),
-            'Economically Disadvantaged': Number(school.four_year_econ_disadvantaged_rate || 0),
-        }));
+    const formatDemographicData = () => {
+        return selectedSchools
+            .filter(school => graduationData.has(school.DistrictName))
+            .map(school => {
+                const data = graduationData.get(school.DistrictName)!;
+                return {
+                    name: school.Name,
+                    'White': Number(data.four_year_white_rate || 0),
+                    'Black': Number(data.four_year_black_rate || 0),
+                    'Hispanic': Number(data.four_year_hispanic_rate || 0),
+                    'Economically Disadvantaged': Number(data.four_year_econ_disadvantaged_rate || 0),
+                };
+            });
     };
 
     return (
         <div className="comparison-section">
-            {selectedSchools.map((school) => (
-                <div key={school.district_name} className="district-card fade-in">
-                    <div className="district-header">
-                        <h3 className="district-title">{school.district_name}</h3>
-                        <button
-                            className="remove-button"
-                            onClick={() => onRemoveSchool(school)}
-                        >
-                            Remove
-                        </button>
-                    </div>
+            {selectedSchools.map((school) => {
+                const gradData = graduationData.get(school.DistrictName);
+                if (!gradData) return null;
 
-                    <div className="metrics-grid">
-                        <div className="metric-card">
-                            <h4 className="metric-header">Demographics</h4>
-                            <div className="space-y-3">
-                                <div className="metric-bar">
-                                    <span className="metric-label">White:</span>
-                                    <div className="metric-progress">
-                                        <div
-                                            className="metric-value white-bar"
-                                            style={{width: `${school.four_year_white_rate || 0}%`}}
-                                        >
-                                            {formatPercentage(school.four_year_white_rate)}
+                return (
+                    <div key={school.id} className="district-card fade-in">
+                        <div className="district-header">
+                            <h3 className="district-title">{school.Name}</h3>
+                            <button
+                                className="remove-button"
+                                onClick={() => onRemoveSchool(school.id)}
+                            >
+                                Remove
+                            </button>
+                        </div>
+
+                        <div className="metrics-grid">
+                            <div className="metric-card">
+                                <h4 className="metric-header">Demographics</h4>
+                                <div className="space-y-3">
+                                    <div className="metric-bar">
+                                        <span className="metric-label">White:</span>
+                                        <div className="metric-progress">
+                                            <div
+                                                className="metric-value white-bar"
+                                                style={{width: `${gradData.four_year_white_rate || 0}%`}}
+                                            >
+                                                {formatPercentage(gradData.four_year_white_rate)}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 <div className="metric-bar">
                                     <span className="metric-label">Black:</span>
                                     <div className="metric-progress">
                                         <div
                                             className="metric-value black-bar"
-                                            style={{width: `${school.four_year_black_rate || 0}%`}}
+                                            style={{width: `${gradData.four_year_black_rate || 0}%`}}
                                         >
-                                            {formatPercentage(school.four_year_black_rate)}
+                                            {formatPercentage(gradData.four_year_black_rate)}
                                         </div>
                                     </div>
                                 </div>
@@ -92,9 +129,9 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
                                     <div className="metric-progress">
                                         <div
                                             className="metric-value hispanic-bar"
-                                            style={{width: `${school.four_year_hispanic_rate || 0}%`}}
+                                            style={{width: `${gradData.four_year_hispanic_rate || 0}%`}}
                                         >
-                                            {formatPercentage(school.four_year_hispanic_rate)}
+                                            {formatPercentage(gradData.four_year_hispanic_rate)}
                                         </div>
                                     </div>
                                 </div>
@@ -108,24 +145,25 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
                                 <div className="metric-progress">
                                     <div
                                         className="metric-value disadvantaged-bar"
-                                        style={{width: `${school.four_year_econ_disadvantaged_rate || 0}%`}}
+                                        style={{width: `${gradData.four_year_econ_disadvantaged_rate || 0}%`}}
                                     >
-                                        {formatPercentage(school.four_year_econ_disadvantaged_rate)}
+                                        {formatPercentage(gradData.four_year_econ_disadvantaged_rate)}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            ))}
+            );
+        })}
 
-            {selectedSchools.length > 0 && (
+            {selectedSchools.length > 0 && graduationData.size > 0 && (
                 <div className="charts-section">
                     <div className="chart-container">
                         <h3 className="chart-title">Graduation Rates Comparison</h3>
                         <div style={{ width: '100%', height: 400 }}>
                             <ResponsiveContainer>
-                                <BarChart data={formatData(selectedSchools)}>
+                                <BarChart data={formatData()}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis domain={[0, 100]} />
@@ -143,7 +181,7 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
                         <h3 className="chart-title">Demographic Performance</h3>
                         <div style={{ width: '100%', height: 400 }}>
                             <ResponsiveContainer>
-                                <RadarChart data={formatDemographicData(selectedSchools)}>
+                                <RadarChart data={formatDemographicData()}>
                                     <PolarGrid />
                                     <PolarAngleAxis dataKey="name" />
                                     <PolarRadiusAxis domain={[0, 100]} />

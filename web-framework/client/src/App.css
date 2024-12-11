@@ -16,6 +16,12 @@ body {
   color: var(--app-text);
 }
 
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Main Navigation */
 .main-nav {
   background-color: var(--app-primary);
@@ -41,11 +47,94 @@ body {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Error Handling */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+}
+
+.error-message {
+  color: #e53e3e;
+  margin-bottom: 1rem;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Comparison Grid */
+.graduation-grid {
+  display: grid;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* Chart Containers */
+.chart-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+/* Selected Schools Display */
+.selected-schools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.selected-schools button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--app-text);
+}
+
+.selected-schools button:hover {
+  color: #e53e3e;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .nav-links {
     flex-wrap: wrap;
     padding: 0 1rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .graduation-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -53,5 +142,9 @@ body {
   .nav-links {
     flex-direction: column;
     align-items: center;
+  }
+
+  .container {
+    padding: 0 0.5rem;
   }
 }
