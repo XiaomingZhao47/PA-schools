@@ -1,6 +1,7 @@
-// components/GraduationSearch.tsx
 import React, { useState } from 'react';
+import { Search } from 'lucide-react';
 import { GraduationData } from '../types';
+import '../styles/GraduationAnalysis.css';
 
 interface Props {
     graduationData: GraduationData[];
@@ -11,62 +12,70 @@ interface Props {
 const GraduationSearch: React.FC<Props> = ({ graduationData, onSchoolSelect, selectedSchools }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<GraduationData[]>([]);
+    const [showDropdown, setShowDropdown] = useState(false);
 
     const handleSearch = (term: string) => {
         setSearchTerm(term);
-        if (term.length > 2) {
-            const filtered = graduationData.filter(school =>
-                school.district_name.toLowerCase().includes(term.toLowerCase()) ||
-                school.county.toLowerCase().includes(term.toLowerCase())
-            );
+        if (term.length > 0) {
+            const filtered = graduationData
+                .filter(school =>
+                    school.district_name.toLowerCase().includes(term.toLowerCase()) ||
+                    school.county.toLowerCase().includes(term.toLowerCase())
+                )
+                .slice(0, 10);
             setSearchResults(filtered);
+            setShowDropdown(true);
         } else {
-            setSearchResults([]);
+            // show top 10 districts
+            const topDistricts = [...graduationData]
+                .sort((a, b) => (b.four_year_cohort || 0) - (a.four_year_cohort || 0))
+                .slice(0, 10);
+            setSearchResults(topDistricts);
+            setShowDropdown(true);
         }
     };
 
     return (
-        <div className="search-container p-4">
-            <div className="search-box mb-4">
+        <div className="search-container">
+            <div className="search-box">
+                <Search className="search-icon" size={20} />
                 <input
                     type="text"
                     placeholder="Search by district name or county..."
-                    className="w-full p-2 border rounded"
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
+                    onFocus={() => setShowDropdown(true)}
                 />
-            </div>
 
-            {searchResults.length > 0 && (
-                <div className="search-results">
-                    <table className="w-full border-collapse">
-                        <thead>
-                        <tr className="bg-gray-100">
-                            <th className="p-2 text-left">District</th>
-                            <th className="p-2 text-left">County</th>
-                            <th className="p-2 text-center">Action</th>
-                        </tr>
-                        </thead>
-                        <tbody>
+                {showDropdown && (
+                    <div className="search-results">
+                        <div className="search-header">
+                            {searchTerm ? 'Search Results' : 'Top 10 Districts by Size'}
+                        </div>
                         {searchResults.map((school) => (
-                            <tr key={school.district_name} className="border-b">
-                                <td className="p-2">{school.district_name}</td>
-                                <td className="p-2">{school.county}</td>
-                                <td className="p-2 text-center">
-                                    <button
-                                        className="bg-blue-500 text-white px-3 py-1 rounded"
-                                        onClick={() => onSchoolSelect(school)}
-                                        disabled={selectedSchools.some(s => s.district_name === school.district_name)}
-                                    >
-                                        Add to Compare
-                                    </button>
-                                </td>
-                            </tr>
+                            <div key={school.district_name} className="search-result-item">
+                                <div className="district-info">
+                                    <div className="district-name">{school.district_name}</div>
+                                    <div className="district-county">{school.county} County</div>
+                                </div>
+                                <button
+                                    className="add-button"
+                                    onClick={() => {
+                                        onSchoolSelect(school);
+                                        setShowDropdown(false);
+                                    }}
+                                    disabled={selectedSchools.some(s => s.district_name === school.district_name)}
+                                >
+                                    {selectedSchools.some(s => s.district_name === school.district_name)
+                                        ? 'Added'
+                                        : 'Add to Compare'
+                                    }
+                                </button>
+                            </div>
                         ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
