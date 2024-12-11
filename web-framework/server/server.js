@@ -19,7 +19,13 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, (err) => {
     }
 });
 
-// get demographics data for all schools
+/* *
+*
+* Five API for query data from database, will do SQL optimization later
+*
+* */
+
+// 1. demographics data for all schools
 app.get('/api/demographics', (req, res) => {
     const query = `
     SELECT s.school_name, 
@@ -53,75 +59,122 @@ app.get('/api/demographics', (req, res) => {
     });
 });
 
-// get demographics data grouped by cities
-app.get('/api/cities', (req, res) => {
+// 2. graduation rates data
+app.get('/api/graduation-rates', (req, res) => {
     const query = `
-    SELECT s.school_address_city,
-           s.school_name,
-           f.ai_an AS american_indian,
-           f.asian,
-           f.nh_pi AS native_hawaiian,
-           f.african_american AS black,
-           f.hispanic,
-           f.white,
-           f.multiracial AS two_or_more_races,
-           f.economically_disadvantaged,
-           f.english_learner,
-           f.special_education,
-           f.female_school AS female,
-           f.male_school AS male,
-           f.year
-    FROM FastFactsSchool f
-    JOIN Schools s ON f.school_id = s.school_id
-    WHERE f.year = (
-        SELECT MAX(year) 
-        FROM FastFactsSchool
-    )
+    SELECT 
+        l.lea_name AS district_name,
+        l.county,
+        c4.total_grads AS four_year_grads,
+        c4.total_cohort AS four_year_cohort,
+        c4.white_grad_rate AS four_year_white_rate,
+        c4.african_american_grad_rate AS four_year_black_rate,
+        c4.hispanic_grad_rate AS four_year_hispanic_rate,
+        c4.economically_disadvantaged_grad_rate AS four_year_econ_disadvantaged_rate,
+        c5.total_grads AS five_year_grads,
+        c5.total_cohort AS five_year_cohort,
+        c6.total_grads AS six_year_grads,
+        c6.total_cohort AS six_year_cohort
+    FROM LEAs l
+    LEFT JOIN CohortFourYear c4 ON l.aun = c4.aun
+    LEFT JOIN CohortFiveYear c5 ON l.aun = c5.aun AND c5.year = c4.year
+    LEFT JOIN CohortSixYear c6 ON l.aun = c6.aun AND c6.year = c4.year
+    WHERE c4.year = (SELECT MAX(year) FROM CohortFourYear)
     `;
 
     db.all(query, [], (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
         } else {
-            // Group schools by city
-            const cities = rows.reduce((acc, row) => {
-                if (!acc[row.school_address_city]) {
-                    acc[row.school_address_city] = [];
-                }
-                acc[row.school_address_city].push(row);
-                return acc;
-            }, {});
-
-            res.json(cities);
+            res.json(rows);
         }
     });
 });
 
-// endpoint to get district-level demographics
-app.get('/api/district-demographics', (req, res) => {
+// 3. financial data
+app.get('/api/financial-analysis', (req, res) => {
     const query = `
-    SELECT l.lea_name AS district_name,
-           l.county,
-           f.ai_an AS american_indian,
-           f.asian,
-           f.nh_pi AS native_hawaiian,
-           f.african_american AS black,
-           f.hispanic,
-           f.white,
-           f.multiracial AS two_or_more_races,
-           f.economically_disadvantaged,
-           f.english_learner,
-           f.special_education,
-           f.female AS female,
-           f.male AS male,
-           f.lea_enrollment AS total_enrollment,
-           f.year
-    FROM FastFactsDistrict f
-    JOIN LEAs l ON f.aun = l.aun
-    WHERE f.year = (
-        SELECT MAX(year) 
-        FROM FastFactsDistrict
-    )
+    SELECT 
+        l.lea_name AS district_name,
+        l.county,
+        r.local_taxes,
+        r.state_revenue,
+        r.federal_revenue,
+        r.steb_market_value,
+        e.instruction AS instruction_spending,
+        e.support_services AS support_spending,
+        e.transportation AS transportation_spending,
+        e.total_expenditures,
+        ROUND(CAST(e.instruction AS FLOAT) / NULLIF(e.total_expenditures, 0) * 100, 2) AS instruction_percentage,
+        a.mv_pi_aid_ratio AS market_value_aid_ratio
+    FROM LEAs l
+    JOIN AFRRevenue r ON l.aun = r.aun
+    JOIN AFRExpenditure e ON l.aun = e.aun AND e.year = r.year
+    JOIN AidRatios a ON l.aun = a.aun AND a.year = r.year
+    WHERE r.year = (SELECT MAX(year) FROM AFRRevenue)
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+// 4. school performance
+app.get('/api/school-performance', (req, res) => {
+    const query = `
+    SELECT 
+        s.school_name,
+        s.school_address_city,
+        l.county,
+        f.school_enrollment,
+        f.title_i_school,
+        f.economically_disadvantaged,
+        f.english_learner,
+        f.special_education,
+        f.essa_school_designation,
+        f.career_and_technical_programs
+    FROM Schools s
+    JOIN LEAs l ON s.aun = l.aun
+    JOIN FastFactsSchool f ON s.school_id = f.school_id
+    WHERE f.year = (SELECT MAX(year) FROM FastFactsSchool)
+    ORDER BY l.county, s.school_address_city, s.school_name
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+// 5. district size and programs data
+app.get('/api/district-programs', (req, res) => {
+    const query = `
+    SELECT 
+        l.lea_name AS district_name,
+        l.county,
+        f.lea_enrollment,
+        f.number_of_schools,
+        f.enrollment_in_partnering_ctcs,
+        f.cs_enrollment,
+        f.district_size,
+        f.gifted,
+        e.gifted_programs AS gifted_spending,
+        e.vocational_programs AS vocational_spending,
+        e.pre_k AS prek_spending,
+        f.ctc_name,
+        f.ctc_website
+    FROM LEAs l
+    JOIN FastFactsDistrict f ON l.aun = f.aun
+    JOIN AFRExpenditure e ON l.aun = e.aun AND e.year = f.year
+    WHERE f.year = (SELECT MAX(year) FROM FastFactsDistrict)
+    ORDER BY f.lea_enrollment DESC
     `;
 
     db.all(query, [], (err, rows) => {
