@@ -153,40 +153,7 @@ app.get('/api/school-performance', (req, res) => {
     });
 });
 
-// 5. district size and programs data
-app.get('/api/district-programs', (req, res) => {
-    const query = `
-    SELECT 
-        l.lea_name AS district_name,
-        l.county,
-        f.lea_enrollment,
-        f.number_of_schools,
-        f.enrollment_in_partnering_ctcs,
-        f.cs_enrollment,
-        f.district_size,
-        f.gifted,
-        e.gifted_programs AS gifted_spending,
-        e.vocational_programs AS vocational_spending,
-        e.pre_k AS prek_spending,
-        f.ctc_name,
-        f.ctc_website
-    FROM LEAs l
-    JOIN FastFactsDistrict f ON l.aun = f.aun
-    JOIN AFRExpenditure e ON l.aun = e.aun AND e.year = f.year
-    WHERE f.year = (SELECT MAX(year) FROM FastFactsDistrict)
-    ORDER BY f.lea_enrollment DESC
-    `;
-
-    db.all(query, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-        } else {
-            res.json(rows);
-        }
-    });
-});
-
-// 6. home page search
+// 5. home page search
 app.get('/api/schools/search', (req, res) => {
     const searchTerm = req.query.term;
     const sortBy = req.query.sortBy || 'school';
