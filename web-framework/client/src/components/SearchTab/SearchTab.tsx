@@ -22,12 +22,12 @@ const ITEMS_PER_PAGE = 10;
 const SearchTab: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<SearchSchool[]>([]);
-    const [activeTab, setActiveTab] = useState('name');
+    const [activeTab, setActiveTab] = useState('school');
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const navigate = useNavigate();
 
-    const handleSearch = async (term: string) => {
+    const handleSearch = async (term: string, sortBy: string = activeTab) => {
         setSearchTerm(term);
         setCurrentPage(1);
 
@@ -38,13 +38,22 @@ const SearchTab: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const response = await axios.get(`http://localhost:5001/api/schools/search?term=${encodeURIComponent(term)}`);
+            const response = await axios.get(
+                `http://localhost:5001/api/schools/search?term=${encodeURIComponent(term)}&sortBy=${sortBy}`
+            );
             setSearchResults(response.data);
         } catch (error) {
             console.error('Error searching schools:', error);
             setSearchResults([]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleTabChange = (tabId: string) => {
+        setActiveTab(tabId);
+        if (searchTerm.length >= 2) {
+            handleSearch(searchTerm, tabId);
         }
     };
 
@@ -57,7 +66,6 @@ const SearchTab: React.FC = () => {
         { id: 'enrollment', icon: 'enrollment', label: 'Enrollment' }
     ];
 
-    // pagination calculations
     const totalPages = Math.ceil(searchResults.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -66,8 +74,8 @@ const SearchTab: React.FC = () => {
     return (
         <div className="search-container">
             <div className="search-header">
-                <h1>OneSearch for School in PA</h1>
-                <p>Sort by Different Aspects</p>
+                <h1>PA School OneSearch</h1>
+                <p>Compare and Explore Pennsylvania Schools by Any Criteria</p>
             </div>
 
             <div className="search-tabs">
@@ -75,7 +83,7 @@ const SearchTab: React.FC = () => {
                     <div
                         key={tab.id}
                         className={`search-tab ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => handleTabChange(tab.id)}
                     >
                         <i className={`fas fa-${tab.icon}`}></i>
                         {tab.label}
@@ -86,7 +94,7 @@ const SearchTab: React.FC = () => {
             <div className="search-box">
                 <input
                     type="text"
-                    placeholder="Search by school name, district, or city..."
+                    placeholder={`Search by ${activeTab}...`}
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="search-input"

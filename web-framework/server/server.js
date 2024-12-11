@@ -189,9 +189,23 @@ app.get('/api/district-programs', (req, res) => {
 // 6. home page search
 app.get('/api/schools/search', (req, res) => {
     const searchTerm = req.query.term;
+    const sortBy = req.query.sortBy || 'school';
+
     if (!searchTerm) {
         return res.status(400).json({ error: 'Search term is required' });
     }
+
+    // Map frontend sort parameters to database columns
+    const sortMapping = {
+        school: 's.school_name',
+        district: 'l.lea_name',
+        city: 's.school_address_city',
+        county: 'l.county',
+        grades: 'f.grades_offered',
+        enrollment: 'f.school_enrollment'
+    };
+
+    const orderByColumn = sortMapping[sortBy] || sortMapping.school;
 
     const query = `
         SELECT DISTINCT
@@ -214,13 +228,13 @@ app.get('/api/schools/search', (req, res) => {
             LOWER(l.lea_name) LIKE LOWER(?) OR
             LOWER(s.school_address_city) LIKE LOWER(?) OR
             LOWER(l.county) LIKE LOWER(?)
-            )
-          AND f.year = (
+        )
+        AND f.year = (
             SELECT MAX(year)
             FROM FastFactsSchool
         )
-        ORDER BY s.school_name
-            LIMIT 100
+        ORDER BY ${orderByColumn}
+        LIMIT 100
     `;
 
     const searchPattern = `%${searchTerm}%`;
