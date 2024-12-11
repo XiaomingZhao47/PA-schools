@@ -65,7 +65,7 @@ class SheetDict:
 
     dict = None
     '''[Dictionary]: The outermost dictionary in which the data is stored.'''
-    identifier = None:
+    identifier = None
     '''[String]: The name of the identifier for each structure (e.g. "aun" for LEAs, etc.).'''
 
     def __init__(self, dict, identifier):

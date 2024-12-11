@@ -212,6 +212,15 @@ def clean_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
     for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
         sheet_dicts = {}
 
+        # Don't process files without parsers written yet
+        should_process = False
+        for process_check in ["Fast", "AFR", "Aid", "Cohort", "Keystone"]:
+            if process_check in subdirectory:
+                should_process = True
+
+        if not should_process:
+            continue
+
         #if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid" not in subdirectory and "APD" not in subdirectory and "Cohort" not in subdirectory:
         #if "Keystones" not in subdirectory:
         #    continue

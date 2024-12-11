@@ -159,6 +159,7 @@ def can_safely_replace(val1, val2):
 
     <ARGUMENTS>
         * val1 [Any]: The original value.
+
         * val2 [Any]: The replacement value.
 
     <RETURNS>
@@ -337,6 +338,7 @@ def parse_standard_wb(wb, logger):
 
     <ARGUMENTS>
         * wb [openpyxl.Workbook]: The workbook to be parsed.
+
         * logger [util.Logger]: The current Logger instance.
 
     <RETURN>
@@ -409,6 +411,7 @@ def parse_ffs_wb(wb, logger):
 
     <ARGUMENTS>
         * wb [openpyxl.Workbook]: The workbook to be parsed.
+
         * logger [util.Logger]: The current Logger instance.
 
     <RETURN>
@@ -488,6 +491,7 @@ def parse_keystone_wb(wb, logger):
 
     <ARGUMENTS>
         * wb [openpyxl.Workbook]: The workbook to be parsed.
+
         * logger [util.Logger]: The current Logger instance.
 
     <RETURN>
@@ -530,7 +534,7 @@ def parse_keystone_wb(wb, logger):
                 if attr == "school_id":
                     continue
 
-                is_lea_attr = attr in ["lea_name", "county", "lea_name", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
+                is_lea_attr = attr in ["lea_name", "aun", "county", "lea_name", "lea_address_street", "lea_address_city", "lea_address_state", "lea_address_zip", "lea_website", "lea_telephone"]
                 is_iu_attr = attr in ["iu_name"]
                 is_school_attr = attr in ["school_name", "aun", "school_address_street", "school_address_city", "school_address_state", "school_address_zip", "school_website", "school_telephone"]
 
@@ -569,14 +573,16 @@ def write_composite_dict(composite_dict, col_types, filename):
 
     <ARGUMENTS>
         * composite_dict [Dictionary]: The composite dictionary to be writted to file.
+
         * col_types [Dictionary]: The SQLite3 data types for each column.
+
         * filename [String]: The name of the file to be written to.
     '''
 
     wb = openpyxl.Workbook()
     sheet = wb.active
 
-    sheet.cell(row=1, column=1).value = sheet_dict.identifier + " PK_INTEGER"
+    sheet.cell(row=1, column=1).value = composite_dict.identifier + " PK_INTEGER"
     sheet.cell(row=1, column=2).value = "year PK_INTEGER"
 
     next_key_index = 3
@@ -584,7 +590,7 @@ def write_composite_dict(composite_dict, col_types, filename):
 
     rowIdx = 2
 
-    for year, year_dict in sheet_dict.dict.items():
+    for year, year_dict in composite_dict.dict.items():
         for id, record in year_dict.items():
             for record_key, attribute in record.items():
                 sheet.cell(row=rowIdx, column=1).value = id
