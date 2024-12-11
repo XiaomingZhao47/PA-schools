@@ -1,3 +1,81 @@
+'''
+<FILE>
+clean_data.py
+
+
+<DESCRIPTION>
+The purpose of this script is to clean the data files. It does so through a few
+important steps:
+
+    * Ensure File Type Consistencty
+        All files, if possible, will be converted to an .xslx format. Any files
+        that cannot be converted will be removed. This step ensures that we can
+        use the same system to process all files.
+
+    * Clean Files:
+        Once all the files are converted to an .xslx format, this step will
+        remove any unecessary file formatting, and restructure the data fields
+        in each file to follow a consistent format. It will also merge each
+        statistic type's years into one file. (See @clean_files(...) for more
+        details).
+
+<FUNCTIONS>
+This script can be run by calling clean_data.run(<args>). All other functions
+in this script should remain private. This section only lists a brief description
+of each function. For more comprehensive documentation, see each method directly.
+
+    * run(...):
+        Converts, removes, and cleans the data files.
+
+    * do_conversions(...):
+        Converts each file, if possible, to an .xlsx format.
+
+    * remove_extra_files(...)
+        Removes any files not in an .xlsx format.
+
+    * clean_files(...):
+        Processes each file to follow a consistent structure.
+
+    * trim_sheet(...)
+        Removes leading rows and columns from a sheet.
+
+    * parse_standard_sheet(...)
+        Parses a standard data sheet.
+
+    * rename_attribute(...)
+        Renames attributes to follow a consistent and safe naming convention.
+
+    * rename_fast_fact_attribute(...):
+        Renames School/District Fast Fact attributes.
+
+    * parse_district_fast_facts(...):
+        Parses District Fast Fact worksheets.
+
+    * parse_school_fast_facts(...)
+        Parses School Fast Fact worksheets.
+
+    * parse_afr_expenditure(...)
+        Parses AFR Expenditure worksheets.
+
+    * parse_afr_revenue(...)
+        Parses AFR Revenute worksheets.
+
+    * parse_aid_ratio(...)
+        Parses Aid Ratio worksheets.
+
+    * parse_keystone(...)
+        Parses Keystone Exam worksheets.
+
+    * parse_apd(...)
+        Parses APD worksheets.
+
+    * parse_cohort(...)
+        Parses Cohort worksheets.
+
+    * write_dicts(...)
+        Writes the SheetDicts to file.
+'''
+
 import openpyxl
 import shutil
 import os
@@ -6,7 +84,39 @@ from xls2xlsx import XLS2XLSX
 from pathlib import Path
 from scripts.utils import Logger, detect_year, SheetDict, detect_type
 
+def run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+    '''
+    Converts, removes, and cleans the data files.
+
+    <ARGUMENTS>
+        * ORGANIZED_DATA_DIRECTORY [String]: The path to the input directory.
+
+        * CLEAN_DATA_DIRECTORY [String]: The path to the output directory.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
+    logger.indent()
+
+    do_conversions(ORGANIZED_DATA_DIRECTORY, logger)
+    remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger)
+    clean_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
+
+    logger.unindent()
+
 def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
+    '''
+    Removes any files not in an .xlsx format.
+
+    <EXTENDED_DESCRIPTION>
+    All modification will be done in-place.
+
+    <ARGUMENTS>
+        * ORGANIZED_DATA_DIRECTORY [String]: The path to the input directory.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
     logger.write("Converting files...")
     logger.indent()
 
@@ -34,21 +144,241 @@ def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
     logger.unindent()
     logger.write("Done!")
 
-def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
-    parsed_sheet = {}
+def remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger):
+    '''
+    Converts each file, if possible, to an .xlsx format.
 
-    #print(sheet)
-    #print(enumerate(sheet.rows))
+    <EXTENDED_DESCRIPTION>
+    All modification will be done in-place.
+
+    <ARGUMENTS>
+        * ORGANIZED_DATA_DIRECTORY [String]: The path to the input directory.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
+    logger.write("Removing Extra Files...")
+    logger.indent()
+
+    for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
+        for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
+            file = ORGANIZED_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
+            logger.write(f'Processing {file}')
+            logger.indent()
+
+            if ".xlsx" not in file:
+                os.remove(file)
+                logger.write("Removing file")
+
+            logger.unindent()
+
+
+    logger.unindent()
+    logger.write("Done!")
+
+def clean_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
+    '''
+    Processes each file to follow a consistent structure.
+
+    <EXTENDED_DESCRIPTION>
+    To clean the data files, the data is written into a SheetDict. See <utils.py>
+    for a description of SheetDicts.
+
+    It reorganizes the files in a few imporant ways:
+
+        * Splits Files Into Sheets:
+            Sheets within each file are separated. E.g., if a file,
+            "Stat1_2019-2020.xlsx" has sheets "Sheet1", "Sheet2", it will split
+            the file into two, named "Sheet1.xlsx" and "Sheet2.xlsx".
+
+        * Combines Sheets:
+            When performing the previous step, it will combine the statistics
+            per year. E.g., There are three files, named "Stat1_2019-2020.xlsx",
+            "Stat1_2020-2021.xslx", and "Stat2_2021-2022.xlsx", each consisting
+            of a singular sheet. The output will be two files, "Stat1.xlsx",
+            containing sheets [2019, 2020], and "Stat2.xlsx", containing a
+            sheet only for 2021.
+
+        * Matching Columns:
+            Columns will remain consistant between years, per statistic. E.g.
+            if the output file, "Stat1.xlsx', has the attribute "mvpi" in
+            column D in year 2019, all other years for in "Stat1.xlsx' will
+            have "mvpi" as the Dth column.
+    '''
+
+    logger.write("Cleaning Data...")
+    logger.indent()
+
+    for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
+        sheet_dicts = {}
+
+        #if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid" not in subdirectory and "APD" not in subdirectory and "Cohort" not in subdirectory:
+        #if "Keystones" not in subdirectory:
+        #    continue
+
+        for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
+            if "#" in filename:
+                continue
+
+            logger.write(filename)
+            file = ORGANIZED_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
+            new_file = CLEAN_DATA_DIRECTORY + "/" + filename
+
+            year = detect_year(file)
+            wb = openpyxl.open(file)
+
+            if "Fast_Facts_District" in file:
+                if "Fast_Facts_District" not in sheet_dicts:
+                    sheet_dicts["Fast_Facts_District"] = {}
+                sheet_dicts["Fast_Facts_District"][year] = parse_district_fast_facts(wb)
+
+            elif "Fast_Facts_School" in file:
+                if "Fast_Facts_School" not in sheet_dicts:
+                    sheet_dicts["Fast_Facts_School"] = {}
+                sheet_dicts["Fast_Facts_School"][year] = parse_school_fast_facts(wb)
+
+            elif "AFR_Expenditure" in file:
+                if "AFR_Expenditure" not in sheet_dicts:
+                    sheet_dicts["AFR_Expenditure"] = {}
+                    #sheet_dicts["AFR_Expenditure_Per_ADM"] = {}
+
+                afr_expenditures = parse_afr_expenditure(wb, year)
+                sheet_dicts["AFR_Expenditure"][year] = afr_expenditures[0]
+                #sheet_dicts["AFR_Expenditure_Per_ADM"][year] = afr_expenditures[1] Doesn't provide new data
+
+            elif "AFR_Revenue" in file:
+                if "AFR_Revenue" not in sheet_dicts:
+                    sheet_dicts["AFR_Revenue"] = {}
+                    #sheet_dicts["AFR_Revenue_Per_ADM"] = {}
+                    sheet_dicts["AFR_Revenue_TCEM"] = {}
+
+
+                afr_revenues = parse_afr_revenue(wb, year)
+                sheet_dicts["AFR_Revenue"][year] = afr_revenues[0]
+                #sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1] Doesn't provide new data
+                sheet_dicts["AFR_Revenue_TCEM"][year] = afr_revenues[2]
+
+            elif "Aid_Ratios" in file:
+                if "Aid_Ratios_LEA" not in sheet_dicts:
+                    sheet_dicts["Aid_Ratios_LEA"] = {}
+                    sheet_dicts["Aid_Ratios_IU"] = {}
+
+                aid_ratios = parse_aid_ratio(wb, year)
+                sheet_dicts["Aid_Ratios_LEA"][year] = aid_ratios[0]
+                sheet_dicts["Aid_Ratios_IU"][year] = aid_ratios[1]
+
+            #elif "APD" in file:
+            #    if "APD" not in sheet_dicts:
+            #        sheet_dicts["APD"] = {}
+            #   sheet_dicts["APD"][year] = parse_apd(wb)
+
+            elif "Cohort" in file:
+                if "Cohort_LEA" not in sheet_dicts:
+                    sheet_dicts["Cohort_LEA"] = {}
+                    sheet_dicts["Cohort_School"] = {}
+
+                fix = "Four" in subdirectory and year == 2012
+
+                cohorts = parse_cohort(wb, year, fix)
+                sheet_dicts["Cohort_LEA"][year] = cohorts[0]
+                sheet_dicts["Cohort_School"][year] = cohorts[1]
+            elif "Keystone_Exams_School" in file:
+                if "Keystone_Exams" not in sheet_dicts:
+                    sheet_dicts["Keystone_Exams"] = {}
+
+                sheet_dicts["Keystone_Exams"][year] = parse_keystone(wb, year)
+            else:
+                logger.write(f'No parser for: {file}')
+                wb.close()
+                continue
+            wb.close()
+        write_dicts(sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY)
+
+    logger.unindent()
+    logger.write("Done!")
+
+def trim_sheet(sheet, rows, cols=0):
+    '''
+    Removes leading rows and columns from a sheet.
+
+    <ARGUMENTS>
+        * sheet [openpyxl Sheet]: The sheet to be trimmed.
+
+        * rows [Integer]: The number of rows to remove.
+
+        * cols=0 [Integer]: The number of columns to remove.
+
+    <RETURN>
+        * [openpyxl Sheet]: The trimmed sheet
+    '''
+
+    if rows != 0:
+        sheet.delete_rows(1, rows)
+
+    if cols != 0:
+        sheet.delete_cols(1, cols)
+
+    return sheet
+
+def parse_standard_sheet(sheet, year, rename_attr_cb, get_id_cb):
+    '''
+    Parses a standard data sheet.
+
+    <ENTENDED_DESCRIPTION>
+    Provides a generic implementation to parse an openpyxl Sheet. The exact
+    process on how it parses the sheet will be specified using the callback
+    methods provided as input.
+
+    A "standard" sheet is one where each Key value is only provided in the sheet
+    once, and the sheet doesn't require modifications other than formatting,
+    trimming, and renaming attributes.
+
+    <ARGUMENTS>
+        * sheet [openpyxl Sheet]:
+            The openpyxl Sheet to be parsed.
+
+        * year [Integer]:
+            The year which the Sheet describes.
+
+        * rename_attr_cb [Function]:
+            Callback function to rename all attributes in the given sheet.
+
+            <ARGUMENTS>:
+                * [String]: The name of the attribute to be renamed.
+
+            <RETURN>:
+                * [String]: The attribute's new name.
+
+        * get_id_cb [Function]:
+            Callback function to determine each row's key
+
+            <EXTENDED_DESCRIPTION>
+
+            Because the id (aun, school_id, etc.), might not appear in the same
+            column year-to-year, this callback function is used to locate that
+            identifier.
+
+            <ARGUMENTS>:
+                * [ [openpyxl Cell...] ]: The array of data values for each row.
+                * [Integer]: The year which the Sheet describes.
+
+            <RETURN>:
+                * [Any]: The row's id.
+
+    <RETURN>
+        * [Dictionary]: A dictionary containing the entire sheet's data.
+    '''
+
+    parsed_sheet = {}
 
     first = True
     for row_idx, row in enumerate(sheet.rows):
-        #print("HERE!")
 
         if first:
             first = False
             continue
 
-        id = detect_type(get_id(row, year))
+        id = detect_type(get_id_cb(row, year))
         if id is None:
             continue
 
@@ -64,6 +394,26 @@ def parse_standard_sheet(sheet, year, rename_attr_cb, get_id):
     return parsed_sheet
 
 def rename_attribute(attribute):
+    '''
+    Renames attributes to follow a consistent and safe naming convention.
+
+    <ENTENDED_DESCRIPTION>
+    This function is indented to provide a common renaming functionality,
+    applicable to all parsed sheets. Each parser function should extend this
+    renaming function, to tailer each to the sheet.
+
+    The processing provided here includes removing punctuation, replacing
+    spaces with underlines, and converting all text to lowercase.
+
+    <ARGUMENTS>
+        * attribute [String | None]: The name of the attribute to be renamed.
+
+    <RETURN>
+        * [String | None]:
+            The renamed attribute, should it be one worth keeping.
+            None, otherwise.
+    '''
+
     if attribute == None:
         return None
 
@@ -84,6 +434,23 @@ def rename_attribute(attribute):
     return new_name
 
 def rename_fast_fact_attribute(attribute):
+    '''
+    Renames School/District Fast Fact attributes.
+
+    <EXTENDED_DESCRIPTION>
+    Because both School Fast Fact and District Fast Fact sheets follow a very
+    similar naming system, this function is able to rename both. Hence, instead
+    of having one copy for each parser, this was put into the outer scope.
+
+    <ARGUMENTS>
+        * attribute [String | None]: The name of the attribute to be renamed.
+
+    <RETURN>
+        * [String | None]:
+            The renamed attribute, should it be one worth keeping.
+            None, otherwise.
+    '''
+
     new_name = rename_attribute(attribute)
 
     new_name = new_name.replace("_-_percent_enrollment_by_student_groups", "").replace("district_", "lea_")
@@ -147,6 +514,22 @@ def rename_fast_fact_attribute(attribute):
     return new_name
 
 def parse_district_fast_facts(wb):
+    '''
+    Parses District Fast Fact worksheets.
+
+    <ENTENDED_DESCRIPTION>
+    Because the District Fast Fact worksheets follow an unusual file structure
+    (with what should be columns instead being rows), this function cannot rely
+    on @parse_standard_sheet(...). Instead, it implements a custom parsing
+    algorithm tailored to this unique structure.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]: A SheetDict containing the parsed data.
+    '''
+
     def rename_district_fast_facts_attribute(attr):
         new_name = rename_fast_fact_attribute(attr)
         if new_name is None:
@@ -185,6 +568,22 @@ def parse_district_fast_facts(wb):
     return SheetDict(districts, "aun")
 
 def parse_school_fast_facts(wb):
+    '''
+    Parses School Fast Fact worksheets.
+
+    <ENTENDED_DESCRIPTION>
+    Because the School Fast Fact worksheets follow an unusual file structure
+    (with what should be columns instead being rows), this function cannot rely
+    on @parse_standard_sheet(...). Instead, it implements a custom parsing
+    algorithm tailored to this unique structure.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]: A SheetDict containing the parsed data.
+    '''
+
     def rename_school_fast_facts_attribute(attr):
         new_name = rename_fast_fact_attribute(attr)
         if new_name is None:
@@ -228,9 +627,22 @@ def parse_school_fast_facts(wb):
 
     return SheetDict(schools, "school_id")
 
-
-
 def parse_afr_expenditure(wb, year):
+    '''
+    Parses AFR Expenditure worksheets.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed AFR Expenditure data (Sheet 1/2).
+
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed AFR Expenditure per ADM data
+            (Sheet 2/2).
+    '''
+
     def get_exp_aun(row, year):
         return row[1].value
 
@@ -349,6 +761,24 @@ def parse_afr_expenditure(wb, year):
     return [expenditures_dict, expenditures_adm_dict]
 
 def parse_afr_revenue(wb, year):
+    '''
+    Parses AFR Revenue worksheets.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed AFR Revenue data (Sheet 1/3).
+
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed AFR Reveune Tax Colleted & Eq.
+            Millis data (Sheet 2/3).
+
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed AFR Reveune per ADM data (Sheet 3/3).
+    '''
+
     def get_rbs_aun(row, year):
         return row[1].value
 
@@ -461,6 +891,20 @@ def parse_afr_revenue(wb, year):
     return [rbs_dict, rpa_dict, tcem_dict]
 
 def parse_aid_ratio(wb, year):
+    '''
+    Parses Aid Ratio worksheets.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed Aid Ratio LEA data (Sheet 1/2).
+
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed Aid Ratio IU data (Sheet 2/2).
+    '''
+
     def rename_aid_ratio_attr(attr):
 
         new_name = rename_attribute(attr)
@@ -576,6 +1020,22 @@ def parse_aid_ratio(wb, year):
     return [lea_dict, iu_dict]
 
 def parse_keystone(wb, year):
+    '''
+    Parses Keystone Exam worksheets.
+
+    <ENTENDED_DESCRIPTION>
+    Because the Keystone Exam worksheets follow an unusual file structure
+    (with a key composed of multiple attributes), this function cannot rely
+    on @parse_standard_sheet(...). Instead, it implements a custom parsing
+    algorithm tailored to this unique structure.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]: A SheetDict containing the parsed Keystone Exam Data.
+    '''
+
     def get_keystone_school_id(row, year):
         if year == 2015:
             return row[0].value
@@ -675,8 +1135,23 @@ def parse_keystone(wb, year):
     #print(schools)
     return SheetDict(schools, "school_id")
 
-
 def parse_apd(wb):
+    '''
+    Parses APD worksheets.
+
+    <ENTENDED_DESCRIPTION>
+    Because the APD worksheets follow an unusual file structure (with what
+    should be columns instead being rows), this function cannot rely on
+    @parse_standard_sheet(...). Instead, it implements a custom parsing
+    algorithm tailored to this unique structure.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]: A SheetDict containing the parsed data.
+    '''
+
     def rename_apd_attr(attr):
         new_name = rename_attribute(attr)
         new_name = new_name.replace("_-_", "_").replace("/", "_").replace(":", "_").replace("-", "_").replace("(", "").replace(")", "")
@@ -710,6 +1185,20 @@ def parse_apd(wb):
     return SheetDict(schools, "school_id")
 
 def parse_cohort(wb, year, fix = False):
+    '''
+    Parses Cohort worksheets.
+
+    <ARGUMENTS>
+        * wb [openpyxl Workbook]: The worksheet to be parsed.
+
+    <RETURN>
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed Cohort LEA data (Sheet 1/2).
+
+        * [utils.SheetDict]:
+            A SheetDict containing the parsed Cohort School data (Sheet 2/2).
+    '''
+
     def get_cohort_lea_aun(row, year):
         aun = row[1].value
         if aun == "STATE":
@@ -810,6 +1299,19 @@ def parse_cohort(wb, year, fix = False):
     return [cohort_lea_dict, cohort_sch_dict]
 
 def write_dicts(classified_sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY):
+    '''
+    Writes the SheetDicts to file.
+
+    <ARGUMENTS>
+        * classified_sheet_dicts [Dictionary]:
+            A dictionary of SheetDicts, where the key is the type of statistic.
+
+        * subdirectory [String]:
+            The subdirectory containing a data file.
+
+        * CLEAN_DATA_DIRECTORY [String]:
+            The path to the output directory.
+    '''
 
     Path(CLEAN_DATA_DIRECTORY + "/" + subdirectory).mkdir(parents=True, exist_ok=True)
     for classification, sheet_dicts in classified_sheet_dicts.items():
@@ -846,140 +1348,3 @@ def write_dicts(classified_sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY):
 
         wb.save(CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + classification + ".xlsx")
         wb.close()
-
-def clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
-    logger.write("Cleaning Data...")
-    logger.indent()
-
-    for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
-        sheet_dicts = {}
-
-        #if "Fast" not in subdirectory and "AFR" not in subdirectory and "Aid" not in subdirectory and "APD" not in subdirectory and "Cohort" not in subdirectory:
-        if "Keystones" not in subdirectory:
-            continue
-
-        for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
-            if "#" in filename:
-                continue
-
-            logger.write(filename)
-            file = ORGANIZED_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
-            new_file = CLEAN_DATA_DIRECTORY + "/" + filename
-
-            year = detect_year(file)
-            wb = openpyxl.open(file)
-
-            if "Fast_Facts_District" in file:
-                if "Fast_Facts_District" not in sheet_dicts:
-                    sheet_dicts["Fast_Facts_District"] = {}
-                sheet_dicts["Fast_Facts_District"][year] = parse_district_fast_facts(wb)
-
-            elif "Fast_Facts_School" in file:
-                if "Fast_Facts_School" not in sheet_dicts:
-                    sheet_dicts["Fast_Facts_School"] = {}
-                sheet_dicts["Fast_Facts_School"][year] = parse_school_fast_facts(wb)
-
-            elif "AFR_Expenditure" in file:
-                if "AFR_Expenditure" not in sheet_dicts:
-                    sheet_dicts["AFR_Expenditure"] = {}
-                    #sheet_dicts["AFR_Expenditure_Per_ADM"] = {}
-
-                afr_expenditures = parse_afr_expenditure(wb, year)
-                sheet_dicts["AFR_Expenditure"][year] = afr_expenditures[0]
-                #sheet_dicts["AFR_Expenditure_Per_ADM"][year] = afr_expenditures[1] Doesn't provide new data
-
-            elif "AFR_Revenue" in file:
-                if "AFR_Revenue" not in sheet_dicts:
-                    sheet_dicts["AFR_Revenue"] = {}
-                    #sheet_dicts["AFR_Revenue_Per_ADM"] = {}
-                    sheet_dicts["AFR_Revenue_TCEM"] = {}
-
-
-                afr_revenues = parse_afr_revenue(wb, year)
-                sheet_dicts["AFR_Revenue"][year] = afr_revenues[0]
-                #sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1] Doesn't provide new data
-                sheet_dicts["AFR_Revenue_TCEM"][year] = afr_revenues[2]
-
-            elif "Aid_Ratios" in file:
-                if "Aid_Ratios_LEA" not in sheet_dicts:
-                    sheet_dicts["Aid_Ratios_LEA"] = {}
-                    sheet_dicts["Aid_Ratios_IU"] = {}
-
-                aid_ratios = parse_aid_ratio(wb, year)
-                sheet_dicts["Aid_Ratios_LEA"][year] = aid_ratios[0]
-                sheet_dicts["Aid_Ratios_IU"][year] = aid_ratios[1]
-
-            elif "APD" in file:
-                if "APD" not in sheet_dicts:
-                    sheet_dicts["APD"] = {}
-
-                sheet_dicts["APD"][year] = parse_apd(wb)
-
-            elif "Cohort" in file:
-                if "Cohort_LEA" not in sheet_dicts:
-                    sheet_dicts["Cohort_LEA"] = {}
-                    sheet_dicts["Cohort_School"] = {}
-
-                fix = "Four" in subdirectory and year == 2012
-
-                cohorts = parse_cohort(wb, year, fix)
-                sheet_dicts["Cohort_LEA"][year] = cohorts[0]
-                sheet_dicts["Cohort_School"][year] = cohorts[1]
-            elif "Keystone_Exams_School" in file:
-                if "Keystone_Exams" not in sheet_dicts:
-                    sheet_dicts["Keystone_Exams"] = {}
-
-                sheet_dicts["Keystone_Exams"][year] = parse_keystone(wb, year)
-            else:
-                logger.write(f'No parser for: {file}')
-                wb.close()
-                continue
-            wb.close()
-        write_dicts(sheet_dicts, subdirectory, CLEAN_DATA_DIRECTORY)
-
-    logger.unindent()
-    logger.write("Done!")
-
-def remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger):
-    logger.write("Removing Extra Files...")
-    logger.indent()
-
-    for subdirectory in os.listdir(ORGANIZED_DATA_DIRECTORY):
-        for filename in os.listdir(ORGANIZED_DATA_DIRECTORY + "/" + subdirectory):
-            file = ORGANIZED_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
-            logger.write(f'Processing {file}')
-            logger.indent()
-
-            if ".xlsx" not in file:
-                os.remove(file)
-                logger.write("Removing file")
-
-            logger.unindent()
-
-
-    logger.unindent()
-    logger.write("Done!")
-
-def trim_sheet(sheet, rows, cols=0):
-    if rows != 0:
-        sheet.delete_rows(1, rows)
-
-    if cols != 0:
-        sheet.delete_cols(1, cols)
-
-    return sheet
-
-def run(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
-    logger.indent()
-
-    do_conversions(ORGANIZED_DATA_DIRECTORY, logger)
-    remove_extra_files(ORGANIZED_DATA_DIRECTORY, logger)
-
-    clean_data(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger)
-
-    logger.unindent()
-
-#logger = Logger("crawler-logs.txt")
-#logger.write("Staring Script...")
-#run("./data-organized", "./data-clean", logger)
-#logger.write("Done!")

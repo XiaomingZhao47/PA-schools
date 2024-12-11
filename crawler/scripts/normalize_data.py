@@ -1,3 +1,65 @@
+'''
+<FILE>
+normalize_data.py
+
+
+<DESCRIPTION>
+The purpose of this script is to normalize the data output from <clean_data.py>, and
+prepare it for insertion into the database. It does so through a few important steps:
+
+    * Combine Years:
+        Each input file has several sheets, one for each year in which
+        the data was recorded. This script combines these sheets into
+        one, where the year is part of the primary key.
+
+    * 2NF Sheets:
+        Some sheets might have functional dependencies that can be removed
+        (e.g. aun -> lea_name). These are pulled out into separate sheets
+        (IUs, LEAs, Schools).
+
+    * Label Data with Types:
+        Automatically detects what SQLite3 type (TEXT, REAL, INT) each
+        attribute is. It then labels each attribute with this type.
+
+<FUNCTIONS>
+This script can be run by calling normalize_data.run(<args>). All other functions
+in this script should remain private. This section only lists a brief description
+of each function. For more comprehensive documentation, see each method directly.
+
+    * run(...):
+        Normalizes the output from <clean_data.py>.
+
+    * can_safely_replace(...):
+        Detects if a value can safely be clobbered by another.
+
+    * add_to_sheet_dict(...):
+        Adds a key/value pair to a SheetDict.
+
+    * add_to_composite_dict(...):
+        Adds a key/value pair to a composite dictionary.
+
+    * merge_composite_dicts(...):
+        Combines two composite dictionaries into one.
+
+    * parse_standard_wb(...):
+        Parses standard workbook to write the data into
+        corresponding SheetDict/composite dictionaries.
+
+    * parse_ffs_wb(...):
+        Parses a Fast Facts School workbook to write the
+        data into corresponding SheetDict/composite dictionaries.
+
+    * parse_keystone_wb(...):
+        Parses a Keystone workbook to write the data into
+        corresponding SheetDict/composite dictionaries.
+
+    * write_composite_dict(...):
+        Writes a composite dictionary into file.
+
+    * write_sheet_dict(...):
+        Writes a SheetDict into file.
+'''
+
 import openpyxl
 import shutil
 import os
@@ -10,7 +72,98 @@ schools = SheetDict({}, "school_id")
 leas = SheetDict({}, "aun")
 ius = SheetDict({}, "aun")
 
+def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
+    '''
+     Normalizes the output from <clean_data.py>.
+
+    <EXTENDED_DESCRIPTION>
+    This is the only intended entry-point into <normalize_data.py>. This
+    script will read in the files from the clean data directory, and write
+    the results of this script to the normalized data directory.
+
+    <ARGUMENTS>
+        * CLEAN_DATA_DIRECTORY [String]: The path to the input directory.
+
+        * NORMALIZED_DATA_DIRECTORY [String]: The path to the output directory.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
+    logger.indent()
+
+    for subdirectory in os.listdir(CLEAN_DATA_DIRECTORY):
+        data_dict = SheetDict({}, "")
+        col_types_dict = {}
+
+        new_file = NORMALIZED_DATA_DIRECTORY + "/" + subdirectory + ".xlsx"
+        for filename in os.listdir(CLEAN_DATA_DIRECTORY + "/" + subdirectory):
+            if "#" in filename:
+                continue
+
+            logger.write(f'Processing {subdirectory}/{filename}')
+            #if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename and "Keystone" not in filename:
+            #    continue
+            #if "Keystone" not in filename:
+            #    continue
+            if "APD" in filename:
+                continue
+
+            file = CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
+
+            #print(f'File: {file}')
+
+            wb = openpyxl.open(file)
+
+            if "Fast_Facts_School" in filename:
+                [dict, col_types] = parse_ffs_wb(wb, logger)
+            elif "Cohort_School" in filename:
+                pass
+                #[dict, col_types] = parse_cohort_school(wb, logger)
+            elif "Keystone" in filename:
+                [dict, col_types] = parse_keystone_wb(wb, logger)
+            else:
+                [dict, col_types] = parse_standard_wb(wb, logger)
+
+            merge_composite_dicts(logger, data_dict, dict)
+
+            col_types_dict.update(col_types)
+
+            wb.close()
+
+        #print(f'Data dict at end: {data_dict}')
+        write_composite_dict(data_dict, col_types_dict, new_file)
+
+
+    write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
+    write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/LEAs.xlsx")
+    write_sheet_dict(ius, NORMALIZED_DATA_DIRECTORY + "/IUs.xlsx")
+
+    logger.unindent()
+
+#logger = Logger("crawler-logs.txt")
+#logger.write("Staring Script...")
+#run("./data-organized", "./data-clean", logger)
+#logger.write("Done!")
+
+
 def can_safely_replace(val1, val2):
+    '''
+    Detects if a value can be safely clobbered by another.
+
+    <EXTENDED_DESCRIPTION>
+    Dictionaries can only have one value per key. However, in some cases,
+    that value may need to be updated (e.g. a School District changes its
+    name). This function detects if this change is a trivial one, such as a
+    capitalization change, and thus determines if the value can be safely
+    replaced without losing data.
+
+    <ARGUMENTS>
+        * val1 [Any]: The original value.
+        * val2 [Any]: The replacement value.
+
+    <RETURNS>
+        * [Boolean]: If a value can be safely clobbered by another.
+    '''
     if val1 == val2:
         return True
 
@@ -38,6 +191,31 @@ def can_safely_replace(val1, val2):
 
 
 def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
+    '''
+    Adds a key/value pair to a SheetDict.
+
+    <EXTENDED_DESCRIPTION>
+    See <utils.py> for a description of SheetDicts.
+
+    Adds a given attribute and value to a given SheetDict.
+
+    <ARGUMENTS>
+        * logger [utils.Logger]:
+            The current Logger instance.
+
+        * sheet_dict [utils.SheetDict]:
+            The SheetDict in which the key/value pair should be written to.
+
+        * id [Integer]:
+            The record that should be written to.
+
+        * attribute [String]:
+            The name of the attribute being written to in the record.
+
+        * value [Any]:
+            The value being written into the record.
+    '''
+
     if id is None:
         return
     if value is None:
@@ -55,6 +233,35 @@ def add_to_sheet_dict(logger, sheet_dict, id, attribute, value):
     dict[id][attribute] = value
 
 def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
+    '''
+    Adds a key/value pair to a composite dict.
+
+    <EXTENDED_DESCRIPTION>
+    A composite dictionary is similar to a SheetDict (See <utils.py>), but having
+    a record where the key is composed both of an id and the year in which the
+    data was recorded. E.g., each school has multiple attribute/value pairs for
+    each calendar year.
+
+    <ARGUMENTS>
+        * logger [utils.Logger]:
+            The current Logger instance.
+
+        * composite_dict [Dictionary]:
+            The composite dictionary in which the data should be written to.
+
+        * id [Integer]:
+            The record that should be written to in the composite dictionary.
+
+        * year [Integer]:
+            The year in which the data was recorded.
+
+        * attribute [String]:
+            The name of the attribute being written to in the record.
+
+        * value [Any]:
+            The value being written into the record.
+    '''
+
     if value is None:
         return
     if id is None:
@@ -72,7 +279,28 @@ def add_to_composite_dict(logger, composite_dict, id, year, attribute, value):
 
     composite_dict[year][id][attribute] = value
 
-def merge_composite_dicts(dest, source):
+def merge_composite_dicts(logger, dest, source):
+    '''
+    Merges two composite dictionaries.
+
+    <EXTENDED_DESCRIPTION>
+    See @add_to_composite_dict(...) for a description of composite dictionaries.
+
+    Combines two composite dictionaries into one. This is useful because multiple
+    files might contain similar data, so it might make sense to combine the
+    data points into a singular composite dictionary.
+
+    <ARGUMENTS>
+        * logger [utils.Logger]:
+            The current Logger instance.
+
+        * dest [Dictionary]:
+            The composite dictionary which is being written to.
+
+        * source [Dictionary]:
+            The composite dictionary which is being read from.
+    '''
+
     dest_dict = dest.dict
     source_dict = source.dict
 
@@ -96,6 +324,30 @@ def merge_composite_dicts(dest, source):
     dest.identifier = source.identifier
 
 def parse_standard_wb(wb, logger):
+    '''
+    Parses standard workbook to write the data into corresponding SheetDict/
+    composite dictionaries.
+
+    <EXTENDED_DESCRIPTION>
+    See @add_to_composite_dict(...) for a description of composite dictionaries.
+    See <utils.py> for a description of SheetDicts.
+
+    Parses a standard workbook. A "standard" workbook assumes that the
+    data describes a LEA, and the AUN is present in the first column.
+
+    <ARGUMENTS>
+        * wb [openpyxl.Workbook]: The workbook to be parsed.
+        * logger [util.Logger]: The current Logger instance.
+
+    <RETURN>
+        * [util.SheetDict]:
+            A SheetDict with the parsed data.
+
+        * [Dictionary]:
+            A dictionary with the SQLite3 types that best describes
+            each attribute.
+    '''
+
     data_dict = {}
     col_types = {}
 
@@ -145,6 +397,29 @@ def parse_standard_wb(wb, logger):
     return (SheetDict(data_dict, "aun"), col_types)
 
 def parse_ffs_wb(wb, logger):
+    '''
+    Parses a Fast Facts School workbook to write the data into corresponding
+    SheetDict/composite dictionaries.
+
+    <EXTENDED_DESCRIPTION>
+    See @add_to_composite_dict(...) for a description of composite dictionaries.
+    See <utils.py> for a description of SheetDicts.
+
+    Parses a Fast Facts School workbook.
+
+    <ARGUMENTS>
+        * wb [openpyxl.Workbook]: The workbook to be parsed.
+        * logger [util.Logger]: The current Logger instance.
+
+    <RETURN>
+        * [util.SheetDict]:
+            A SheetDict with the parsed data.
+
+        * [Dictionary]:
+            A dictionary with the SQLite3 types that best describes
+            each attribute.
+    '''
+
     data_dict = {}
     col_types = {}
 
@@ -203,6 +478,26 @@ def parse_ffs_wb(wb, logger):
     return (SheetDict(data_dict, "school_id"), col_types)
 
 def parse_keystone_wb(wb, logger):
+    '''
+    Parses a Keystone workbook to write the data into corresponding.
+    SheetDict/composite dictionaries.
+
+    <EXTENDED_DESCRIPTION>
+    See @add_to_composite_dict(...) for a description of composite dictionaries.
+    See <utils.py> for a description of SheetDicts.
+
+    <ARGUMENTS>
+        * wb [openpyxl.Workbook]: The workbook to be parsed.
+        * logger [util.Logger]: The current Logger instance.
+
+    <RETURN>
+        * [util.SheetDict]:
+            A SheetDict with the parsed data.
+
+        * [Dictionary]:
+            A dictionary with the SQLite3 types that best describes
+            each attribute.
+    '''
     data_dict = {}
     col_types = {}
 
@@ -262,10 +557,22 @@ def parse_keystone_wb(wb, logger):
     logger.unindent()
     return (SheetDict(data_dict, "school_id"), col_types)
 
-def parse_cohort_school(wb, logger):
-    pass
+#def parse_cohort_school(wb, logger):
+#    pass
 
-def write_composite_dict(sheet_dict, col_types, filename):
+def write_composite_dict(composite_dict, col_types, filename):
+    '''
+    Writes a composite dictionary into file.
+
+    <EXTENDED_DESCRIPTION>
+    See @add_to_composite_dict(...) for a description of composite dictionaries.
+
+    <ARGUMENTS>
+        * composite_dict [Dictionary]: The composite dictionary to be writted to file.
+        * col_types [Dictionary]: The SQLite3 data types for each column.
+        * filename [String]: The name of the file to be written to.
+    '''
+
     wb = openpyxl.Workbook()
     sheet = wb.active
 
@@ -297,6 +604,17 @@ def write_composite_dict(sheet_dict, col_types, filename):
     wb.close()
 
 def write_sheet_dict(sheet_dict, filename):
+    '''
+    Writes a SheetDict into file
+
+    <EXTENDED_DESCRIPTION>
+    See <utils.py> for a description of SheetDicts.
+
+    <ARGUMENTS>
+        * sheet_dict [utils.SheetDict]: The SheetDict to be writted to file.
+        * filename [String]: The name of the file to be written to.
+    '''
+
     wb = openpyxl.Workbook()
     sheet = wb.active
     sheet.cell(row=1, column=1).value = sheet_dict.identifier + " PK_INTEGER"
@@ -326,60 +644,3 @@ def write_sheet_dict(sheet_dict, filename):
 
     wb.save(filename)
     wb.close()
-
-def run(CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, logger):
-    logger.indent()
-
-    for subdirectory in os.listdir(CLEAN_DATA_DIRECTORY):
-        data_dict = SheetDict({}, "")
-        col_types_dict = {}
-
-        new_file = NORMALIZED_DATA_DIRECTORY + "/" + subdirectory + ".xlsx"
-        for filename in os.listdir(CLEAN_DATA_DIRECTORY + "/" + subdirectory):
-            if "#" in filename:
-                continue
-
-            logger.write(f'Processing {subdirectory}/{filename}')
-            #if "AFR" not in filename and "IU" not in filename and "Fast_Facts" not in filename and "LEA" not in filename and "Keystone" not in filename:
-            #    continue
-            #if "Keystone" not in filename:
-            #    continue
-            if "APD" in filename:
-                continue
-
-            file = CLEAN_DATA_DIRECTORY + "/" + subdirectory + "/" + filename
-
-            #print(f'File: {file}')
-
-            wb = openpyxl.open(file)
-
-            if "Fast_Facts_School" in filename:
-                [dict, col_types] = parse_ffs_wb(wb, logger)
-            elif "Cohort_School" in filename:
-                pass
-                #[dict, col_types] = parse_cohort_school(wb, logger)
-            elif "Keystone" in filename:
-                [dict, col_types] = parse_keystone_wb(wb, logger)
-            else:
-                [dict, col_types] = parse_standard_wb(wb, logger)
-
-            merge_composite_dicts(data_dict, dict)
-
-            col_types_dict.update(col_types)
-
-            wb.close()
-
-        #print(f'Data dict at end: {data_dict}')
-        write_composite_dict(data_dict, col_types_dict, new_file)
-
-
-    write_sheet_dict(schools, NORMALIZED_DATA_DIRECTORY + "/Schools.xlsx")
-    write_sheet_dict(leas, NORMALIZED_DATA_DIRECTORY + "/LEAs.xlsx")
-    write_sheet_dict(ius, NORMALIZED_DATA_DIRECTORY + "/IUs.xlsx")
-
-    logger.unindent()
-
-#logger = Logger("crawler-logs.txt")
-#logger.write("Staring Script...")
-#run("./data-organized", "./data-clean", logger)
-#logger.write("Done!")

@@ -1,9 +1,44 @@
+'''
+<FILE>
+organize_data.py
+
+
+<DESCRIPTION>
+The purpose of this script is to resort the data files into better categories,
+and to rename each file to follow a consistant naming / dating convention.
+
+
+<FUNCTIONS>
+This script can be run by calling organize_data.run(<args>). All other functions
+in this script should remain private. This section only lists a brief description
+of each function. For more comprehensive documentation, see each method directly.
+
+    * run(...): Reorganizes/renames the data files.
+
+    * get_new_directory(...): Determines what directory a file should be sorted into.
+
+    * get_new_name(...): Determines a file's new name.
+
+    * copy(...): Copies a data file to its new name/location.
+'''
+
 import os
 from pathlib import Path
 import shutil
 from scripts.utils import detect_year
 
 def run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger):
+    '''
+    Reorganizes/renames the data files.
+
+    <ARGUMENTS>
+        * DATA_DIRECTORY [String]: The path to the input directory.
+
+        * ORGANIZED_DATA_DIRECTORY [String]: The path to the output directory.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
     logger.indent()
 
     for subdirectory in os.listdir(DATA_DIRECTORY):
@@ -16,7 +51,21 @@ def run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger):
 
     logger.unindent()
 
+
 def get_new_directory(filename, directory, logger):
+    '''
+    Determines what directory a file should be sorted into.
+
+    <ARGUMENTS>
+        * filename [String]: The file's original name.
+
+        * directory [String]: The file's original directory name.
+
+        * logger [utils.Logger]: The current Logger instance.
+
+    <RETURN>
+        * The file's new directory name.
+    '''
     if not directory == "FRPA" and not directory == "Cohorts":
         return directory
 
@@ -48,15 +97,37 @@ def get_new_directory(filename, directory, logger):
     return "INVALID"
 
 def get_new_name(filename, directory, logger):
+    '''
+    Determines a file's new name.
+
+    <EXTENDED_DESCRIPTION>
+    The file's updated name will follow the pattern "File_Name_Year-Year.*".
+    E.g., "AFR_Revenue_2018-2019.xlsx".
+
+    <ARGUMENTS>
+        * filename [String]: The file's original name.
+
+        * directory [String]: The file's original directory name.
+
+        * logger [utils.Logger]: The current Logger instance.
+
+    <RETURN>
+        * The file's new name.
+    '''
+
+    # Removes quotation marks
     if filename[0] == "\"" and filename[-1] == "\"":
         filename = filename[1:-1]
 
     year = -1
+
+    # 2017 is the only year in which the dates are not labeled for these files
     if filename == "DistrictFastFacts.xlsx" or filename == "SchoolFastFacts.xlsx":
         year = 2017
     else:
         year = detect_year(filename)
 
+    # Labels the file with the year. E.g. 2015-2016.
     year_str = str(year) + "-" + str(year+1)
     type_str = "." + filename.split(".")[-1]
 
@@ -98,6 +169,21 @@ def get_new_name(filename, directory, logger):
 
 
 def copy(old_dir, old_name, new_dir, new_name, logger):
+    '''
+    Copies a data file to its new name/location.
+
+    <ARGUMENTS>
+        * old_dir [String]: The file's original directory.
+
+        * old_name [String]: The file's original name.
+
+        * new_dir [String]: The file's new directory.
+
+        * new_name [String]: The file's new name.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
     Path(new_dir).mkdir(parents=True, exist_ok=True)
 
     old_path = old_dir + "/" + old_name

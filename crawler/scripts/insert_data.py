@@ -1,13 +1,114 @@
+'''
+<FILE>
+insert_data.py
+
+
+<DESCRIPTION>
+The purpose of this script is to insert the normalized data into an automatically
+generated SQLite3 database file.
+
+<CLASSES>
+This section only lists a brief description of each class. For more
+comprehensive documentation, see each class directly.
+
+    * Attribute(...): A simple structure to facilitate storing attributes.
+
+
+<FUNCTIONS>
+This script can be run by calling insert_data.run(<args>). All other functions
+in this script should remain private. This section only lists a brief description
+of each function. For more comprehensive documentation, see each method directly.
+
+    * run(...): Inserts the normalized data into the database file.
+
+    * reset_database(...): Wipes the entirety of the database.
+
+    * insert_file(...): Creates and inserts a new table into the database.
+'''
+
 import sqlite3
 import os
 import openpyxl
 
 class Attribute:
+    '''
+    A simple structure to facilitate storing attributes.
+
+    <ATTRIBUTES>
+        * name [String]: A given attribute's name.
+
+        * type: [String]: The attributes SQLite3 data type (INTEGER, REAL, TEXT).
+
+    <FUNCTIONS>
+        * __init__(...): The constructor for an Attribute.
+    '''
+
+    name = None
+    '''A given attribute's name.'''
+
+    type = None
+    '''The attributes SQLite3 data type (INTEGER, REAL, TEXT).'''
+
     def __init__(self, name, type):
+        '''
+        The constructor for an Attribute.
+
+        <ARGUMENTS>
+            * name [String]: A given attribute's name.
+
+            * type: [String]: The attributes SQLite3 data type (INTEGER, REAL, TEXT).
+        '''
+
         self.name = name
         self.type = type
 
-def reset_table(con, logger):
+def run(NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, logger):
+    '''
+    Inserts the normalized data into the database file.
+
+    <ARGUMENTS>
+        * NORMALIZED_DATA_DIRECTORY [String]:
+            The path to the input directory containing the data files.
+
+        * DATABASE_FILE [String]:
+            The path to the database file.
+
+        * logger [utils.Logger]:
+            The current Logger instance.
+    '''
+
+    logger.indent()
+
+    con = sqlite3.connect(DATABASE_FILE)
+    reset_database(con, logger)
+
+    for filename in os.listdir(NORMALIZED_DATA_DIRECTORY):
+        if "#" in filename:
+            continue
+
+        logger.write(f'Processing {filename}')
+
+        logger.indent()
+        insert_file(NORMALIZED_DATA_DIRECTORY, filename, con, logger)
+        logger.unindent()
+
+    con.close()
+    logger.unindent()
+
+def reset_database(con, logger):
+    '''
+    Wipes the entirety of the database.
+
+    <EXTENDED DESCRIPTION>
+    All Tables, Indices, and Triggers will be cleared, and the database will
+    also be vacuumed to save on file space.
+
+    <ARGUMENTS>
+        * con [sqlite3 Connection]: The active connection to the database file.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
     cur = con.cursor()
 
     res1 = cur.execute("PRAGMA writable_schema = 1;")
@@ -25,11 +126,24 @@ def reset_table(con, logger):
     print(res4.fetchall())
     print(res5.fetchall())
 
-def insert_file(start_dir, db, filename, con, logger):
+def insert_file(dir, filename, con, logger):
+    '''
+    Creates and inserts a new table into the database.
+
+    <ARGUMENTS>
+        * dir [String]: The path to the data file's directory.
+
+        * filename [String]: The name of the file being inserted into the database.
+
+        * con [sqlite3 Connection]: The active connection to the database file.
+
+        * logger [utils.Logger]: The current Logger instance.
+    '''
+
     table_name = filename.replace("_", "").replace(".xlsx", "")
     cur = con.cursor()
 
-    wb = openpyxl.open(start_dir + "/" + filename)
+    wb = openpyxl.open(dir + "/" + filename)
     sheet = wb.active
 
     if len(list(sheet.rows)) < 2:
@@ -65,7 +179,7 @@ def insert_file(start_dir, db, filename, con, logger):
 
         attrs.append(Attribute(key_name, key_type))
 
-
+    # Automatically builds the query to create the table
     create_query = f'CREATE TABLE IF NOT EXISTS {table_name} ('
 
     if len(pks) == 0: # No Primary Keys Specified
@@ -80,13 +194,12 @@ def insert_file(start_dir, db, filename, con, logger):
         create_query = create_query + pk + ","
     create_query = create_query[0:-1] + ")\n);"
 
-    #print(create_query)
-
 
     insert_query = f'INSERT INTO {table_name} VALUES ('
     insert_query = insert_query + ("?," * len(attrs))
     insert_query = insert_query[0:-1] + ")"
 
+    # Automatically builds the query to add data to the table
     data = []
     for rowIdx, row in enumerate(sheet.rows):
         if(rowIdx == 0):
@@ -106,6 +219,7 @@ def insert_file(start_dir, db, filename, con, logger):
 
         data.append(data_tuple)
 
+    # Executes both queries
     try:
         cur.execute(create_query)
         cur.executemany(insert_query, data)
@@ -113,34 +227,7 @@ def insert_file(start_dir, db, filename, con, logger):
     except:
         logger.warn(f'SQL Error. \nCreate query: {create_query}\n')
 
-        res = cur.execute(f'SELECT * FROM {table_name}')
-    #print(res.fetchall())
+        res = cur.execute(f'SELECT * FROM {table_name} LIMIT 25;')
+        print(res.fetchall())
 
     wb.close()
-
-
-
-def run(NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, logger):
-    logger.indent()
-
-    con = sqlite3.connect(DATABASE_FILE)
-
-    reset_table(con, logger)
-
-    for filename in os.listdir(NORMALIZED_DATA_DIRECTORY):
-        if "#" in filename:
-            continue
-
-        logger.write(f'Processing {filename}')
-
-        logger.indent()
-        insert_file(NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, filename, con, logger)
-        logger.unindent()
-
-
-
-
-
-    con.close()
-
-    logger.unindent()
