@@ -237,19 +237,19 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
     return (
         <div className="p-4">
 
-            <div className="selected-schools mb-4">
-                {selectedSchools.map(school => (
-                    <div key={school.id} className="inline-flex items-center bg-gray-100 rounded-full px-4 py-2 m-1">
-                        <span className="mr-2">{school.Name}</span>
-                        <button
-                            onClick={() => onRemoveSchool(school.id)}
-                            className="text-red-500 hover:text-red-700"
-                        >
-                            ×
-                        </button>
-                    </div>
-                ))}
-            </div>
+            {/*<div className="selected-schools mb-4">*/}
+            {/*    {selectedSchools.map(school => (*/}
+            {/*        <div key={school.id} className="inline-flex items-center bg-gray-100 rounded-full px-4 py-2 m-1">*/}
+            {/*            <span className="mr-2">{school.Name}</span>*/}
+            {/*            <button*/}
+            {/*                onClick={() => onRemoveSchool(school.id)}*/}
+            {/*                className="text-red-500 hover:text-red-700"*/}
+            {/*            >*/}
+            {/*                ×*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
+            {/*    ))}*/}
+            {/*</div>*/}
 
             <div className="grid grid-cols-1 gap-8">
                 <div className="bg-white rounded-lg shadow-lg p-6">

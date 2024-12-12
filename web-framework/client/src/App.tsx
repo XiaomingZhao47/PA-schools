@@ -145,12 +145,28 @@ const App: React.FC = () => {
                                 />
                             } />
                             <Route path="/demographics" element={
-                                <ChartVisualization
-                                    demographicData={demographicData}
-                                    selectedSchools={selectedSchools}
-                                    onRemoveSchool={handleRemoveSchool}
-                                    isLoading={isLoading}
-                                />
+                                <div className="container">
+                                    <h1>Demographic Analysis</h1>
+                                    <div className="selected-schools">
+                                        {selectedSchools.map((school) => (
+                                            <div key={school.id} className="school-item">
+                                                <span className="school-name">{school.Name}</span>
+                                                <button
+                                                    className="remove-button"
+                                                    onClick={() => handleRemoveSchool(school.id)}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <ChartVisualization
+                                        demographicData={demographicData}
+                                        selectedSchools={selectedSchools}
+                                        onRemoveSchool={handleRemoveSchool}
+                                        isLoading={isLoading}
+                                    />
+                                </div>
                             } />
                             <Route path="/graduation-rates" element={
                                 <div className="container">

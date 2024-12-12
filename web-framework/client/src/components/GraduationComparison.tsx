@@ -24,28 +24,32 @@ interface Props {
 }
 
 const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool }) => {
-    const [graduationData, setGraduationData] = useState<Map<string, GraduationData>>(new Map());
+    const [allGraduationData, setAllGraduationData] = useState<GraduationData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
+    // Fetch all graduation data once
     useEffect(() => {
         const fetchGraduationData = async () => {
-            const newGraduationData = new Map<string, GraduationData>();
-
-            for (const school of selectedSchools) {
-                try {
-                    const response = await axios.get(
-                        `http://localhost:5001/api/graduation-rates/${school.DistrictName}`
-                    );
-                    newGraduationData.set(school.DistrictName, response.data);
-                } catch (error) {
-                    console.error(`Error fetching graduation data for ${school.Name}:`, error);
-                }
+            try {
+                setIsLoading(true);
+                const response = await axios.get('http://localhost:5001/api/graduation-rates');
+                setAllGraduationData(response.data);
+                setError(null);
+            } catch (error) {
+                console.error('Error fetching graduation data:', error);
+                setError('Failed to load graduation data');
+            } finally {
+                setIsLoading(false);
             }
-
-            setGraduationData(newGraduationData);
         };
 
         fetchGraduationData();
-    }, [selectedSchools]);
+    }, []);
+
+    const getGraduationData = (districtName: string): GraduationData | undefined => {
+        return allGraduationData.find(data => data.district_name === districtName);
+    };
 
     const formatPercentage = (value: number): string => {
         return value ? `${Number(value).toFixed(1)}%` : '0%';
@@ -53,23 +57,24 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
 
     const formatData = () => {
         return selectedSchools
-            .filter(school => graduationData.has(school.DistrictName))
             .map(school => {
-                const data = graduationData.get(school.DistrictName)!;
+                const data = getGraduationData(school.DistrictName);
+                if (!data) return null;
                 return {
                     name: school.Name,
                     '4 Year Rate': Number((data.four_year_grads / data.four_year_cohort * 100) || 0),
                     '5 Year Rate': Number((data.five_year_grads / data.five_year_cohort * 100) || 0),
                     '6 Year Rate': Number((data.six_year_grads / data.six_year_cohort * 100) || 0),
                 };
-            });
+            })
+            .filter((data): data is NonNullable<typeof data> => data !== null);
     };
 
     const formatDemographicData = () => {
         return selectedSchools
-            .filter(school => graduationData.has(school.DistrictName))
             .map(school => {
-                const data = graduationData.get(school.DistrictName)!;
+                const data = getGraduationData(school.DistrictName);
+                if (!data) return null;
                 return {
                     name: school.Name,
                     'White': Number(data.four_year_white_rate || 0),
@@ -77,19 +82,28 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
                     'Hispanic': Number(data.four_year_hispanic_rate || 0),
                     'Economically Disadvantaged': Number(data.four_year_econ_disadvantaged_rate || 0),
                 };
-            });
+            })
+            .filter((data): data is NonNullable<typeof data> => data !== null);
     };
+
+    if (isLoading) {
+        return <div className="loading">Loading graduation data...</div>;
+    }
+
+    if (error) {
+        return <div className="error">{error}</div>;
+    }
 
     return (
         <div className="comparison-section">
-            {selectedSchools.map((school) => {
-                const gradData = graduationData.get(school.DistrictName);
-                if (!gradData) return null;
+            <div className="selected-schools">
+                {selectedSchools.map((school) => {
+                    const gradData = getGraduationData(school.DistrictName);
+                    if (!gradData) return null;
 
-                return (
-                    <div key={school.id} className="district-card fade-in">
-                        <div className="district-header">
-                            <h3 className="district-title">{school.Name}</h3>
+                    return (
+                        <div key={school.id} className="school-item">
+                            <span className="school-name">{school.Name}</span>
                             <button
                                 className="remove-button"
                                 onClick={() => onRemoveSchool(school.id)}
@@ -97,67 +111,11 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
                                 Remove
                             </button>
                         </div>
+                    );
+                })}
+            </div>
 
-                        <div className="metrics-grid">
-                            <div className="metric-card">
-                                <h4 className="metric-header">Demographics</h4>
-                                <div className="space-y-3">
-                                    <div className="metric-bar">
-                                        <span className="metric-label">White:</span>
-                                        <div className="metric-progress">
-                                            <div
-                                                className="metric-value white-bar"
-                                                style={{width: `${gradData.four_year_white_rate || 0}%`}}
-                                            >
-                                                {formatPercentage(gradData.four_year_white_rate)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                <div className="metric-bar">
-                                    <span className="metric-label">Black:</span>
-                                    <div className="metric-progress">
-                                        <div
-                                            className="metric-value black-bar"
-                                            style={{width: `${gradData.four_year_black_rate || 0}%`}}
-                                        >
-                                            {formatPercentage(gradData.four_year_black_rate)}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="metric-bar">
-                                    <span className="metric-label">Hispanic:</span>
-                                    <div className="metric-progress">
-                                        <div
-                                            className="metric-value hispanic-bar"
-                                            style={{width: `${gradData.four_year_hispanic_rate || 0}%`}}
-                                        >
-                                            {formatPercentage(gradData.four_year_hispanic_rate)}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="metric-card">
-                            <h4 className="metric-header">Economic Status</h4>
-                            <div className="metric-bar">
-                                <span className="metric-label">Disadvantaged:</span>
-                                <div className="metric-progress">
-                                    <div
-                                        className="metric-value disadvantaged-bar"
-                                        style={{width: `${gradData.four_year_econ_disadvantaged_rate || 0}%`}}
-                                    >
-                                        {formatPercentage(gradData.four_year_econ_disadvantaged_rate)}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        })}
-
-            {selectedSchools.length > 0 && graduationData.size > 0 && (
+            {selectedSchools.length > 0 && allGraduationData.length > 0 && (
                 <div className="charts-section">
                     <div className="chart-container">
                         <h3 className="chart-title">Graduation Rates Comparison</h3>
@@ -200,5 +158,4 @@ const GraduationComparison: React.FC<Props> = ({ selectedSchools, onRemoveSchool
         </div>
     );
 };
-
 export default GraduationComparison;

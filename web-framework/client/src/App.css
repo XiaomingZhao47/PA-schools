@@ -51,20 +51,19 @@ body {
 .main-content {
   flex: 1;
   padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* Container */
-.container {
+.app-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
 }
 
 /* Error Handling */
-.error-container {
+.app-error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73,13 +72,13 @@ body {
   padding: 2rem;
 }
 
-.error-message {
+.app-error-message {
   color: #e53e3e;
   margin-bottom: 1rem;
 }
 
-/* Loading State */
-.loading-container {
+/* App Loading State */
+.app-loading-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -103,14 +102,14 @@ body {
 }
 
 /* Selected Schools Display */
-.selected-schools {
+.app-selected-schools {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
-.selected-schools button {
+.app-selected-schools button {
   background: none;
   border: none;
   cursor: pointer;
@@ -118,7 +117,7 @@ body {
   color: var(--app-text);
 }
 
-.selected-schools button:hover {
+.app-selected-schools button:hover {
   color: #e53e3e;
 }
 
@@ -144,7 +143,56 @@ body {
     align-items: center;
   }
 
-  .container {
+  .app-container {
     padding: 0 0.5rem;
+  }
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--app-text);
+  margin-bottom: 1.5rem;
+}
+
+.selected-schools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.school-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.school-name {
+  font-weight: 500;
+  color: var(--app-text);
+}
+
+.remove-button {
+  padding: 0.5rem 1rem;
+  background-color: #f56565;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.remove-button:hover {
+  background-color: #e53e3e;
+}
+
+@media (max-width: 640px) {
+  .school-item {
+    width: 100%;
   }
 }
