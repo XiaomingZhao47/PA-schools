@@ -97,6 +97,9 @@ The PA School Analysis System is a web application that allows users to compare 
 
 
 ## How To Run the crawler:
+This step is not required, as the output of the crawler script is included
+within the server directory. However, should you want to build the database manually,
+run the following steps.
 
 ### 1. (Opt.) Set up virtual environment
 
