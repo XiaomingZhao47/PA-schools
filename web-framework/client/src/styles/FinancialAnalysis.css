@@ -1,0 +1,78 @@
+.charts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1rem;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pie-charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 1rem 0;
+}
+
+.pie-chart-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.pie-chart-wrapper h4 {
+    margin: 0 0 1rem 0;
+    text-align: center;
+    font-size: 1rem;
+    color: #333;
+}
+
+.chart-title {
+    font-size: 1.25rem;
+    margin: 0 0 1.5rem 0;
+    color: #333;
+    text-align: center;
+}
+
+.selected-schools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.school-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.school-name {
+    font-weight: 500;
+}
+
+.remove-button {
+    padding: 0.25rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background: #ff4444;
+    color: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.remove-button:hover {
+    background: #cc0000;
+}
