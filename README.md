@@ -5,7 +5,7 @@
 The PA School Analysis System is a web application that allows users to compare and analyze various aspects of schools across multiple dimensions including demographics, graduation rates, school performance, and financial metrics.
 
 ### Group Name: Query Conquerers
-### Group Member: Padro dos Santos, Xiaoming Zhao
+### Group Member: Pedro dos Santos, Xiaoming Zhao
 
 ## Features
 
