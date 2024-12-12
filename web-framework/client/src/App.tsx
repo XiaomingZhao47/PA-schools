@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import ChartVisualization from './components/ChartVisualization';
 import SearchTab from './components/SearchTab';
 import GraduationComparison from './components/GraduationComparison';
+import SchoolPerformanceComparison from './components/SchoolPerformanceComparison';
+import FinancialAnalysisComparison from './components/FinancialAnalysisComparison';
 import { School, GraduationData } from './types';
 import './App.css';
 
@@ -175,6 +177,34 @@ const App: React.FC = () => {
                                         <div className="comparison-section">
                                             <h2>Selected Schools Comparison</h2>
                                             <GraduationComparison
+                                                selectedSchools={selectedSchools}
+                                                onRemoveSchool={handleRemoveSchool}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            } />
+                            <Route path="/school-performance" element={
+                                <div className="container">
+                                    <h1>School Performance Analysis</h1>
+                                    <div className="performance-grid">
+                                        <div className="comparison-section">
+                                            <h2>Selected Schools Performance Comparison</h2>
+                                            <SchoolPerformanceComparison
+                                                selectedSchools={selectedSchools}
+                                                onRemoveSchool={handleRemoveSchool}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            } />
+                            <Route path="/financial-analysis" element={
+                                <div className="container">
+                                    <h1>Financial Analysis</h1>
+                                    <div className="financial-grid">
+                                        <div className="comparison-section">
+                                            <h2>Selected Schools Financial Comparison</h2>
+                                            <FinancialAnalysisComparison
                                                 selectedSchools={selectedSchools}
                                                 onRemoveSchool={handleRemoveSchool}
                                             />
