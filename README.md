@@ -498,3 +498,18 @@ $ npm install
 - `/graduation-rates` - Graduation Rates
 - `/school-performance` - School Performance
 - `/financial-analysis` - Financial Analysis
+
+## Visualizations
+
+<div align="center">
+    <img src="https://github.com/user-attachments/assets/7afba208-9dd2-4f5f-bcd7-1ce9bbdad798", alt="Keystone Exam Scores vs. Revenue (Yearly Breakdown)">
+    <p> 
+        Keystone Exam Scores vs. Revenue (Yearly Breakdown)  
+    </p>
+    <br>
+    <img src="https://github.com/user-attachments/assets/2b7f4ea6-ebc1-4f2d-b4bf-a47f8370f16a", alt="Keystone 2022 Exam Scores vs. Revenue (Subject Breakdown)">
+    <br>
+    <p>
+        Keystone 2022 Exam Scores vs. Revenue (Subject Breakdown)
+    </p>
+</div>
