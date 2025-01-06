@@ -1,53 +1,7 @@
-# PA School OneSearch
-
-### Group Name: Query Conquerers
-### Group Members: Pedro dos Santos, Xiaoming Zhao
-
-The PA School OneSearch System is a web application that allows users to visualize various aspects of schools across multiple dimensions including demographics, graduation rates, school performance, and financial metrics. The intuitive interface makes it easy to compare and contrast different schools and school districts.
-
-## Documentation Overview
-
-The OneSearch System is composed of two major components: the crawler, and the web framework. The crawler downloads all the relevant data files, and through a series of transformations, creates a database with clean and normalized data. The web framework then picks up where the crawler left off, using the database to display the relevant data to the users via charts and graphs.
-
-For a more in-depth description of each component, as well as instructions on how to run both, use the following links:
-
-<<<<<<< Updated upstream
-### Useful Links
- - How to Run the Cralwer
- - How to Run the Web Framework
- - Crawler Documentation
- - Web Framework Documentation
- - Database Documentation [External]
- - ER Diagram [External]
-=======
-- Demographic performance radar chart
-    - White student graduation rates
-    - Black student graduation rates
-    - Hispanic student graduation rates
-    - Economically disadvantaged student graduation rates
-
-### 4. School Performance Analysis
--  Enrollment and programs bar chart
-    - Total enrollment
-    - Career and technical programs participation
-
-### 5. Financial Analysis
-#### Revenue Analysis
-- Bar chart visualization
-    - Local taxes
-    - State revenue
-    - Federal revenue
-
-#### Expenditure Distribution
-- Individual pie charts for each selected school 
-  - Instruction spending percentage
-  - Support services percentage
-  - Transportation spending percentage
-
-#### Market Value Aid Ratio
-- Bar chart comparison across selected schools
+# Web Framework Documentation
 
 ## Source Code Structure
+    ```
     /PA-schools/web-framework/client/src
     .
     ├── App.css
@@ -82,130 +36,60 @@ For a more in-depth description of each component, as well as instructions on ho
     └── types.ts
 
     3 directories, 28 files
+    ```
+    
+## Features
 
+### 1. OneSearch
+- School search functionality with auto-complete
+- Up to 5 schools can be selected for comparison
+- Display of basic school information including:
+    - School name
+    - District name
+    - Location (city, county)
+    - Total enrollment
 
-## How To Run the crawler:
-This step is not required, as the output of the crawler script is included
-within the server directory. However, should you want to build the database manually,
-run the following steps.
+### 2. Demographics Analysis
+#### Data Visualization
+- radar chart
+    - Economically disadvantaged students percentage
+    - English learners percentage
+    - Special education percentage
 
-### 1. (Opt.) Set up virtual environment
+### 3. Graduation Rates Analysis
+- Comparison of graduation rates across selected schools
+- Multiple timeframe:
+    - 4-year graduation rate
+    - 5-year graduation rate
+    - 6-year graduation rate
 
-Depending on your OS, you may have to set up a
-virtual environment. Here are some common methods:
+- Demographic performance radar chart
+    - White student graduation rates
+    - Black student graduation rates
+    - Hispanic student graduation rates
+    - Economically disadvantaged student graduation rates
 
-Linux:
-```
-$ python -m venv ./.venv
-$ source ./.venv/bin/activate
-```
+### 4. School Performance Analysis
+-  Enrollment and programs bar chart
+    - Total enrollment
+    - Career and technical programs participation
 
-Other:  
-&emsp;https://docs.python.org/3/library/venv.html
+### 5. Financial Analysis
+#### Revenue Analysis
+- Bar chart visualization
+    - Local taxes
+    - State revenue
+    - Federal revenue
 
-### 2. Install the required packages
+#### Expenditure Distribution
+- Individual pie charts for each selected school 
+  - Instruction spending percentage
+  - Support services percentage
+  - Transportation spending percentage
 
-This project requires a few additional dependencies.
-These are listed in requirements.txt.
+#### Market Value Aid Ratio
+- Bar chart comparison across selected schools
 
-To install, run:
-```
-$ pip install -r requirements.txt
-```
-
-If, for some reason, not all dependencies are installed,
-refresh the dependencies list using pipreqs
-```
-$ pip install pipreqs  
-$ pipreqs . --ignore .venv, __pycache__  
-$ pip install -r requirements.txt
-```
-
-### 3. Execute the crawler script
-
-To run execute the script, run:
-```
-$ python3 crawler.py
-```
-
-## Web Framework Setup
-
-### Prerequisites
-- Node.js (v16.0.0 or higher)
-- npm (v8.0.0 or higher)
-- SQLite3
-
-### Project Structure
-```
-PA-schools/
-├── web-framework/
-│   ├── client/         # React frontend
-│   └── server/         # Node.js backend
-```
-
-### How To Run the Application
-
-#### 1. Start the Backend Server
-
-First, navigate to the server directory
-```bash
-$ cd /PA-schools/web-framework/server
-```
-
-Install the required dependencies
-```bash
-$ npm install express
-$ npm install sqlite3
-$ npm install cors
-$ npm install dotenv
-$ npm install axios
-```
-
-Start the server:
-```bash
-$ node server.js
-```
-
-The server should now be running on http://localhost:5001
-
-#### 2. Start the Frontend Application
-
-Open a new terminal window and navigate to the client directory
-```bash
-$ cd /PA-schools/web-framework/client
-```
-
-Install the required dependencies
-```bash
-$ npm install react
-$ npm install react-dom
-$ npm install react-router-dom
-$ npm install axios
-$ npm install recharts
-$ npm install @types/react
-$ npm install @types/react-dom
-$ npm install typescript
-$ npm install tailwindcss
-$ npm install @tailwindcss/typography
-$ npm install @tailwindcss/forms
-$ npm install lucide-react
-```
-
-Start the React application
-```bash
-$ npm start
-```
-
-The application should now be running on http://localhost:3000
-
-### Additional Configuration
-
-#### Environment Variables
-Create a `.env` file in the server directory with the following content
-```
-PORT=5001
-DB_PATH=../crawler/schools.db
-```
 
 Current database used in `server.js`
 ```
@@ -452,56 +336,18 @@ CREATE TABLE IUs (
 
 ```
 
-### Common Issues
+## Development Notes
 
-1. Port Already in Use
-```bash
-$ lsof -i :5001  # check what's using port 5001
-$ kill -9   # kill the process if needed
-```
-
-2. Database Connection Issues
-```bash
-# check database file permissions
-$ chmod 644 ../crawler/schools.db
-```
-
-3. Node Modules Issues
-```bash
-# clear npm cache and reinstall dependencies
-$ npm cache clean --force
-$ rm -rf node_modules
-$ npm install
-```
-
-### Development Notes
-
-#### Backend API Endpoints
+### Backend API Endpoints
 - GET `/api/demographics`
 - GET `/api/graduation-rates`
 - GET `/api/school-performance`
 - GET `/api/financial-analysis`
 - GET `/api/search`
 
-#### Frontend Routes
+### Frontend Routes
 - `/` - OneSearch
 - `/demographics` - Demographics Analysis
 - `/graduation-rates` - Graduation Rates
 - `/school-performance` - School Performance
 - `/financial-analysis` - Financial Analysis
->>>>>>> Stashed changes
-
-## Visualizations
-
-<div align="center">
-    <img src="https://github.com/user-attachments/assets/7afba208-9dd2-4f5f-bcd7-1ce9bbdad798", alt="Keystone Exam Scores vs. Revenue (Yearly Breakdown)">
-    <p> 
-        Keystone Exam Scores vs. Revenue (Yearly Breakdown)  
-    </p>
-    <br>
-    <img src="https://github.com/user-attachments/assets/2b7f4ea6-ebc1-4f2d-b4bf-a47f8370f16a", alt="Keystone 2022 Exam Scores vs. Revenue (Subject Breakdown)">
-    <br>
-    <p>
-        Keystone 2022 Exam Scores vs. Revenue (Subject Breakdown)
-    </p>
-</div>
