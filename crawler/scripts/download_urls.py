@@ -15,7 +15,7 @@ of each function. For more comprehensive documentation, see each method directly
 
     * run(...): Downloads the URLs listed in the data file URLs file
 
-    * request(...): Will try to request a file from a
+    * request_url(...): Will try to request a file from a
 
     * get_filename(...): Detects a file name in a web request
 
@@ -52,21 +52,21 @@ def run(DATA_URLS_FILE, RAW_DATA_DIRECTORY, logger):
 
     for line in data_urls_file:
 
-        logger.write(f'Checking: {url}')
-        logger.indent()
-
         split_line = line.strip().split("; ")
         file_class = split_line[0]
         url = split_line[1]
 
-        request = request(url)
+        logger.write(f'Checking: {url}')
+        logger.indent()
+
+        request = request_url(url, logger)
 
         if request is None:
             continue
 
         if is_downloadable(request, logger):
             filename = get_filename(request, logger)
-            directory = DATA_DIRECTORY + "/" + file_class + "/"
+            directory = RAW_DATA_DIRECTORY + "/" + file_class + "/"
             filepath = directory + filename
 
             Path(directory).mkdir(parents=True, exist_ok=True)
@@ -84,7 +84,7 @@ def run(DATA_URLS_FILE, RAW_DATA_DIRECTORY, logger):
     data_urls_file.close()
     logger.unindent()
 
-def request(url):
+def request_url(url, logger):
     '''
     Will try to request a file from a given URL.
 
@@ -94,6 +94,8 @@ def request(url):
 
     <ARGUMENTS>
         * url [String]: The URL of the data file.
+
+        * logger [utils.Logger]: The current Logger instance.
 
     <RETURN>
         * [Request | None]:
@@ -105,11 +107,15 @@ def request(url):
     max_attempts = 5
 
     while True: # Will repeatedly try to reach the URL
-        request = requests.get(url)
+        try:
+            request = requests.get(url)
+        except:
+            request = None
 
-        if not request.ok:
+        if request is None or not request.ok:
             logger.write(f'Failed Request: {url}')
-            logger.write(f'Status Code: {request.status_code}')
+            if request is not None:
+                logger.write(f'Status Code: {request.status_code}')
 
             if attempts < max_attempts:
                 attempts = attempts + 1
@@ -118,8 +124,10 @@ def request(url):
                 continue
             else:
                 logger.warn('Max attempt count reached.')
-                logger.warn(f'Could not reach {page_url}!')
+                logger.warn(f'Could not reach {url}!')
                 return None
+        else:
+            return request
 
 def get_filename(request, logger):
     '''
@@ -172,10 +180,10 @@ def is_downloadable(request, logger):
     content_type = request.headers.get('content-type').lower()
 
     if 'text' in content_type:
-        logger.write(f'Invalid content')
+        logger.write(f'Invalid content: {content_type}')
         return False
     if 'html' in content_type:
-        logger.write(f'Invalid content')
+        logger.write(f'Invalid content: {content_type}')
         return False
 
     logger.write(f'Found data')

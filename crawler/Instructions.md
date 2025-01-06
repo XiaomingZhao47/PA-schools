@@ -28,7 +28,7 @@ If, for some reason, not all dependencies are installed,
 refresh the dependencies list using pipreqs
 ```bash
 $ pip install pipreqs  
-$ pipreqs . --ignore .venv, __pycache__  
+$ pipreqs . --ignore .venv,__pycache__ --force
 $ pip install -r requirements.txt
 ```
 

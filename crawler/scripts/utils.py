@@ -272,6 +272,8 @@ def detect_type(value):
 
     if lower_value in ["", "na", "notavailable", "notapplicable", "insufficientsample", "is", "null", "--"]:
         return None
+    if "duetocohortsize" in lower_value:
+        return None
 
     if new_value.isdigit():
         return int(new_value)

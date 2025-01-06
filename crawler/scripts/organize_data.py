@@ -43,9 +43,17 @@ def run(DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, logger):
 
     for subdirectory in os.listdir(DATA_DIRECTORY):
         for filename in os.listdir(DATA_DIRECTORY + "/" + subdirectory):
+            logger.write(f'Checking ./{subdirectory}/{filename}')
 
             new_dir = get_new_directory(filename, subdirectory, logger)
             new_name = get_new_name(filename, new_dir, logger)
+
+            if new_name is None:
+                logger.warn(f'Could not detect year. Ignoring file.')
+                continue
+
+            if subdirectory != new_dir or new_name != filename:
+                logger.write(f'Moving to ./{new_dir}/{new_name}')
 
             copy(DATA_DIRECTORY + "/" + subdirectory, filename, ORGANIZED_DATA_DIRECTORY + "/" + new_dir, new_name, logger)
 
@@ -84,13 +92,13 @@ def get_new_directory(filename, directory, logger):
     if "Datafile" in filename:
         return "FRP"
 
-    if "4-Year" in filename:
+    if "4-year" in filename:
         return "Cohort_Four_Year"
 
-    if "5-Year" in filename:
+    if "5-year" in filename:
         return "Cohort_Five_Year"
 
-    if "6-Year" in filename:
+    if "6-year" in filename:
         return "Cohort_Six_Year"
 
     logger.warn("INVALID DIRECTORY")
@@ -119,13 +127,15 @@ def get_new_name(filename, directory, logger):
     if filename[0] == "\"" and filename[-1] == "\"":
         filename = filename[1:-1]
 
-    year = -1
 
     # 2017 is the only year in which the dates are not labeled for these files
     if filename == "DistrictFastFacts.xlsx" or filename == "SchoolFastFacts.xlsx":
         year = 2017
     else:
-        year = detect_year(filename)
+        try:
+            year = detect_year(filename)
+        except:
+            return None
 
     # Labels the file with the year. E.g. 2015-2016.
     year_str = str(year) + "-" + str(year+1)
@@ -148,18 +158,18 @@ def get_new_name(filename, directory, logger):
 
     if directory == "Keystones":
         level = ""
-        if "State" in filename:
+        if "state" in filename:
             level = "State"
-        elif "School" in filename:
+        elif "school" in filename:
             level = "School"
 
         return "Keystone_Exams_" + level + "_Level_" + year_str + type_str
 
     if directory == "PSSAs":
         level = ""
-        if "State" in filename:
+        if "state" in filename:
             level = "State"
-        elif "School" in filename:
+        elif "school" in filename:
             level = "School"
 
         return "PSSA_" + level + "_Level_" + year_str + type_str
@@ -188,8 +198,6 @@ def copy(old_dir, old_name, new_dir, new_name, logger):
 
     old_path = old_dir + "/" + old_name
     new_path = new_dir + "/" + new_name
-
-    logger.write(f'Moving {old_path} to {new_path}')
 
     shutil.copy2(old_path, new_path)
 

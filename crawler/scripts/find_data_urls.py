@@ -29,6 +29,8 @@ import requests
 import time
 from scripts.utils import detect_year
 
+urls_checked = set()
+
 def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
     '''
     Finds the URLs to each relevant data file.
@@ -57,7 +59,7 @@ def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
         logger.write(f'Checking {url_clean}')
 
         logger.indent()
-        file_urls.extend(find_file_urls(url_clean))
+        file_urls.extend(find_file_urls(url_clean, logger))
         logger.unindent()
 
     for file_url in file_urls:
@@ -67,7 +69,7 @@ def run(PDF_URLS_FILE_PATH, DATA_URLS_FILE_PATH, logger):
     data_urls_file.close()
     logger.unindent()
 
-def find_file_urls(page_url):
+def find_file_urls(page_url, logger):
     '''
     Finds all data file URLs from a given webpage.
 
@@ -77,6 +79,8 @@ def find_file_urls(page_url):
 
     <ARGUMENTS>
         * page_url [String]: The URL of the page to be searched through.
+
+        * logger [utils.Logger]: The current Logger instance.
 
     <RETURN>
         * [[String...]]: A list of all relevant data file URLs on the webpage.
@@ -107,21 +111,29 @@ def find_file_urls(page_url):
 
         file_urls = []
         for possible_file_url in possible_file_urls:
+            if possible_file_url in urls_checked:
+                logger.write(f'Already checked {possible_file_url}')
+                continue
+            else:
+                logger.write(f'Checking {possible_file_url}')
+                urls_checked.add(possible_file_url)
+
             tld = tldextract.extract(page_url).fqdn
 
-            file_class = get_file_classification(possible_file_url, tld)
-            if file_class is not None:
+            file_class = get_file_classification(possible_file_url, tld, logger)
+            if file_class is None:
+                continue
 
-                protocol = "https://" if page_url.startswith("https") else "http://"
-                slash = "" if possible_file_url.startswith("/") else "/"
+            protocol = "https://" if page_url.startswith("https") else "http://"
+            slash = "" if possible_file_url.startswith("/") else "/"
 
-                file_urls.append(file_class + "; " + protocol + tld + slash + possible_file_url)
+            file_urls.append(file_class + "; " + protocol + tld + slash + possible_file_url)
 
         return file_urls
     return []
 
 
-def get_file_classification(possible_file_url, tld):
+def get_file_classification(possible_file_url, tld, logger):
     '''
     Detects what data file classification, if any, a URL falls under. E.g.
     Cohorts, Expenditure Data, Daily Membership, etc.
@@ -131,6 +143,8 @@ def get_file_classification(possible_file_url, tld):
 
         * tld [String]: The Top Level Domain of the webpage.
 
+        * logger [utils.Logger]: The current Logger instance.
+
     <RETURN>
         * [String | None]:
             The file classification, if the file is detected as relevant.
@@ -138,7 +152,10 @@ def get_file_classification(possible_file_url, tld):
     '''
 
     file_url = possible_file_url.lower().replace("%20", " ")
-    file_year = detect_year(file_url)
+    try:
+        file_year = detect_year(file_url)
+    except ValueError:
+        file_year = -1
 
     def accept(file_url, type):
         logger.write(f'Accepting: {file_url}')
@@ -149,6 +166,9 @@ def get_file_classification(possible_file_url, tld):
         return None
 
     if file_url.endswith("aspx"):
+        return reject(file_url)
+
+    if file_url.startswith("http"):
         return reject(file_url)
 
     # 1-5: School/District Facts, School/District Fiscal Data, Future Ready Performace Data
@@ -162,7 +182,7 @@ def get_file_classification(possible_file_url, tld):
         return reject(file_url)
 
     # 6-9, 11-15, 17: Low Income Public/Private Data, Keystone Data, PSSA Data, Graduates, Dropouts, Cohorts, Enrollments, Personell
-    if "education.pa.gov" in tld:
+    if "pa.gov" in tld:
         if "low income" in file_url:
             if "through" in file_url:
                 return reject(file_url)

@@ -162,9 +162,9 @@ run_operation(find_pdf_urls, PDF_FILE, PDF_URLS_FILE, "pdf url finder", "Could n
 run_operation(find_data_urls, PDF_URLS_FILE, DATA_URLS_FILE, "data url finder", "Could not find data urls", check_type="FILE_FILE")
 run_operation(download_urls, DATA_URLS_FILE, RAW_DATA_DIRECTORY, "data downloader", "Data directory is empty", check_type="FILE_DIR")
 run_operation(organize_data, RAW_DATA_DIRECTORY, ORGANIZED_DATA_DIRECTORY, "data organizer", "Not all data has been organized")
-run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned")#, check_type="REQUIRE")
-run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized")#, check_type="REQUIRE")
-run_operation(insert_data, NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, "data inserter", None, check_type="DIR_FILE")#check_type="SKIP")#
+run_operation(clean_data, ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, "data cleaner", "Not all data has been cleaned")
+run_operation(normalize_data, CLEAN_DATA_DIRECTORY, NORMALIZED_DATA_DIRECTORY, "data normalizer", "Not all data has been normalized")
+run_operation(insert_data, NORMALIZED_DATA_DIRECTORY, DATABASE_FILE, "data inserter", None, check_type="DIR_FILE")
 
 logger.unindent()
 logger.write("Done!")

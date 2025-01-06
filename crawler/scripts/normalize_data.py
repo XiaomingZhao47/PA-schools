@@ -389,7 +389,8 @@ def parse_standard_wb(wb, logger):
                 if is_lea_attr:
                     add_to_sheet_dict(logger, leas, aun, attr, value)
                 elif is_iu_attr:
-                    add_to_sheet_dict(logger, ius, aun, attr, value)
+                    if "000000" in str(aun):
+                        add_to_sheet_dict(logger, ius, aun, attr, value)
                     #logger.warn(f'Cannot add to iu dict. Attr: {attr}, Val: {value}' )
                 else:
                     add_to_composite_dict(logger, data_dict, aun, year, attr, value)

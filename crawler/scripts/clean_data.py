@@ -134,10 +134,10 @@ def do_conversions(ORGANIZED_DATA_DIRECTORY, logger):
             if ".xlsx" not in file:
                 logger.write(f'xls detected!')
 
-                xlsx_file = ".".join(xls_file.split(".")[0:-1]) + ".xlsx"
-                XLS2XLSX(xls_file).to_xlsx(xlsx_file)
+                xlsx_file = ".".join(file.split(".")[0:-1]) + ".xlsx"
+                XLS2XLSX(file).to_xlsx(xlsx_file)
 
-                os.remove(xls_file)
+                os.remove(file)
 
             logger.unindent()
 
@@ -236,12 +236,13 @@ def clean_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
             year = detect_year(file)
             wb = openpyxl.open(file)
 
-            if "Fast_Facts_District" in file:
+            # 2023 follows a different format than the rest of the years
+            if "Fast_Facts_District" in file and year != 2023:
                 if "Fast_Facts_District" not in sheet_dicts:
                     sheet_dicts["Fast_Facts_District"] = {}
                 sheet_dicts["Fast_Facts_District"][year] = parse_district_fast_facts(wb)
 
-            elif "Fast_Facts_School" in file:
+            elif "Fast_Facts_School" in file and year != 2023:
                 if "Fast_Facts_School" not in sheet_dicts:
                     sheet_dicts["Fast_Facts_School"] = {}
                 sheet_dicts["Fast_Facts_School"][year] = parse_school_fast_facts(wb)
@@ -258,13 +259,13 @@ def clean_files(ORGANIZED_DATA_DIRECTORY, CLEAN_DATA_DIRECTORY, logger):
             elif "AFR_Revenue" in file:
                 if "AFR_Revenue" not in sheet_dicts:
                     sheet_dicts["AFR_Revenue"] = {}
-                    #sheet_dicts["AFR_Revenue_Per_ADM"] = {}
+                    sheet_dicts["AFR_Revenue_Per_ADM"] = {}
                     sheet_dicts["AFR_Revenue_TCEM"] = {}
 
 
                 afr_revenues = parse_afr_revenue(wb, year)
                 sheet_dicts["AFR_Revenue"][year] = afr_revenues[0]
-                #sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1] Doesn't provide new data
+                sheet_dicts["AFR_Revenue_Per_ADM"][year] = afr_revenues[1] #Doesn't provide new data
                 sheet_dicts["AFR_Revenue_TCEM"][year] = afr_revenues[2]
 
             elif "Aid_Ratios" in file:
@@ -806,8 +807,8 @@ def parse_afr_revenue(wb, year):
             return None
         if "total_local" in new_name:
             return None
-        if "total_revenue" in new_name:
-            return None
+        #if "total_revenue" in new_name:
+        #    return None
         if "%" in new_name:
             return None
 
